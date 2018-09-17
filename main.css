@@ -1,0 +1,147 @@
+ @import url('https://fonts.googleapis.com/css?family=Roboto');
+
+@font-face {
+  font-family: "Avenir";
+  src: url("Avenir-Black.eot?#iefix") format("embedded-opentype"),
+  url("Avenir-Black.woff") format("woff"),
+  url("Avenir-Black.ttf") format("truetype"),
+  url("Avenir-Black.svg#Avenir-Black") format("svg");
+  font-style: normal;
+  font-weight: 900;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'roboto', sans-serif;
+  font-size: 16px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1 {
+  margin: 1em 0 .4em;
+  font-size: 2em;
+}
+
+h1.loading {
+  color: lightgrey;
+}
+
+h2 {
+  font-size: 1.3em;
+}
+
+header {
+  /* background-color: #cb1a20;  RED */
+  background-color: #169754;
+  color: white;
+  display: flex;
+  justify-content: center;
+}
+
+header > div {
+  padding: .2em 0;
+  width: 50em;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+header > div > p {
+  font-size: 3.4em;
+  font-family: 'Avenir', 'Roboto';
+  font-weight: 700;
+  margin-right: .5em;
+}
+
+header p,
+header img {
+  display: inline-block;
+}
+
+.map {
+  background-color: #17263c;
+  width: 100%;
+  height: 45vh;
+  min-height: 20em;
+}
+
+figcaption {
+  display: none;
+}
+
+.copy {
+  background-color: #eee;
+  flex-grow: 1;
+}
+
+.copy-container {
+  list-style: none;
+  background-color: white;
+  margin: 0 auto;
+  max-width: 50em;
+  padding: 1em 2em;
+  border-radius: 0 0 3px 3px;
+  box-shadow: 0 2px 4px #0001;
+}
+
+.event {
+  margin: 1.5em 0 1em;
+  display: flex;
+  flex-direction: row;
+}
+
+.event_sidebar {
+  width: 1.5em;
+  margin: 0 .25em;
+  display: flex;
+  flex-direction: column;
+}
+
+.event_sidebar-point {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  margin: 0.25em;
+  border-radius: 50%;
+  background-color: black;
+}
+
+.event_sidebar-repeating-points {
+  background-image: url("./dot.svg");
+  background-repeat: repeat-y;
+  background-position: top center;
+  background-size: 40%;
+  height: 100%;
+}
+
+.event_content > p {
+  margin-top: .6em;
+}
+
+.event_details {
+  font-size: .8em;
+  color: grey;
+}
+.event_details > span {
+  margin-right: 1em;
+}
+
+.event_details-time::before,
+.event_details-location::before {
+  content: "";
+  display: inline-block;
+  background-size: contain;
+  background-repeat: no-repeat;
+  width: 1em;
+  height: .8em;
+}
+
+.event_details-time::before {
+  background-image: url("./time.svg");
+}
+.event_details-location::before {
+  background-image: url("./location.svg");
+}

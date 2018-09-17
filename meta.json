@@ -1,0 +1,33 @@
+{
+  "steder":{
+    "det akademiske kvarter": {"navn":"Det Akademiske Kvarter", "lat":60.389667, "lng":5.322119},
+    "hulen": {"navn":"Hulen", "lat":60.384783, "lng":5.325368},
+    "koengen": {"navn":"Koengen", "lat":60.400675, "lng":5.318864},
+    "usf verftet": {"navn":"USF Verftet", "lat":60.395879, "lng":5.308950},
+    "cafe opera": {"navn":"Cafe Opera", "lat":60.391823, "lng":5.319869},
+    "amalies hage": {"navn":"Amalies Hage", "lat":60.389914, "lng":5.332137},
+    "vaskeriet": {"navn":"Vaskeriet", "lat":60.391507, "lng":5.319878},
+    "inside": {"navn":"Inside", "lat":60.391402, "lng":5.3218394},
+    "ad fontes": {"navn":"Ad fontes", "lat":60.387540, "lng":5.317680},
+    "parken": {"navn":"Parken", "lat":60.394070, "lng":5.325834},
+    "hectors hybel": {"navn":"Hectors Hybel", "lat":60.391224, "lng":5.321892},
+    "landmark": {"navn":"Landmark", "lat":60.389771, "lng":5.326649},
+    "nhh": {"navn":"NHH", "lat":60.423009, "lng":5.302694},
+    "kronbar": {"navn":"Kronbar", "lat":60.369750, "lng":5.350435},
+    "holmatun": {"navn":"Holmatun", "lat":60.386429, "lng":6.197682},
+    "bergen kino": {"navn":"Bergen Kino", "lat":60.391258, "lng":5.318550},
+    "norsk trikotasjemuseum": {"navn":"Norsk Trikotasjemuseum", "lat":60.507772, "lng":5.271282},
+    "folk & røvere": {"navn":"Folk & Røvere", "lat":60.394239, "lng":5.328056},
+    "bergen internasjonale kultursenter": {"navn":"Bergen Internasjonale Kultursenter", "lat":60.394563, "lng":5.328942},
+    "ole bull scene": {"navn":"Ole Bull Scene", "lat":60.392233, "lng":5.322240},
+    "litteraturhuset": {"navn":"Litteraturhuset", "lat":60.393637, "lng":5.328353},
+    "akvariet": {"navn":"Akvariet", "lat":60.399760, "lng":5.303542}
+  },
+  "kategorier":{
+    "Konsert":"#cb1a20",
+    "Quiz":"#169754",
+    "Debatt og samfunn":"#107aac",
+    "Prøv noe nytt":"#cccccc",
+    "Festival":"#e0631f"
+  }
+}

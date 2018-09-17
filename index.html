@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="nb" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <title>Kulturpulsen | STUDVEST</title>
+  <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png">
+  <link rel="stylesheet" href="./main.css">
+</head>
+<body>
+  <header>
+    <div>
+      <p>STUDVEST</p><img src="./kulturpulsen.svg" alt="KULTURPULSEN">
+    </div>
+  </header>
+
+  <figure>
+    <div id="map" class="map"></div>
+    <figcaption>Kart over arrangementer i Bergen</figcaption>
+  </figure>
+  <section class="copy">
+    <div class="copy-container">
+    <h1 id="title" class="loading">Laster arrangementer ...</h1>
+      <ul id="list"></ul>
+    </div>
+  </section>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA7xGPgK4kYd0yyWxgU5wE5uOY2f3FpNo4"></script>
+  <script src="./main.js"></script>
+</body>
+</html>
