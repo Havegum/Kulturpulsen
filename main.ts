@@ -1,5 +1,8 @@
 /// <reference types="@types/googlemaps" />
 
+const DAYS:Array<string> = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
+const TODAY:Date = new Date();
+
 
 let meta: Promise<any>;
 let map:google.maps.Map;
@@ -13,13 +16,25 @@ window.onload = function() {
     .then(JSON.parse)
     .catch(() => title.textContent = 'Kunne ikke laste innhold');
 
+
+  /*
+    The following block does this:
+      get the url using XMLHttpRequest
+      parse semicolon-delimetered csv
+      for each row:
+        filter rows with empty title
+        map to CultureEvent
+        filter invalid dates
+        sort by date
+        draw
+  */
   getURL('./events.csv')
     .then(parseCSV(';'))
     .then((events: Array<Array<string>>) =>
         events
             .filter(rows => !!rows[0])
             .map(rows => new CultureEvent(...rows))
-            .filter(evt => evt.repeating || evt.start.valueOf() > new Date().valueOf())
+            .filter(evt => evt.repeating || evt.start.valueOf() > TODAY.valueOf())
             .sort((a, b) => Math.sign(a.start.valueOf() - b.start.valueOf()))
             .forEach(evt => evt.draw(list)))
 
@@ -67,14 +82,26 @@ class CultureEvent {
 
     this.container = document.createElement('li');
 
+    this.repeating = false;
 
+    // string is a date
     if(start_date.match(/\d\d\.\d\d\.\d{4}/)) {
       let d:number[] = start_date.trim().split('.').map(n => +n);
       this.start = new Date(d[2], d[1]-1, d[0]);
-      this.repeating = false;
+
+    // string is a day of the week
+    } else if(DAYS.indexOf(start_date) > -1) {
+      let day:number = DAYS.indexOf(start_date);
+      let currentDay:number = (TODAY.getDay() + 5) % 6; // +5%6 makes monday first day
+
+      let dayHasPassed:boolean = day < currentDay;
+
+      // if day has passed, add 7 subtract the difference
+      this.start = new Date(TODAY.getTime() +
+        (day - currentDay + (dayHasPassed ? 7 : 0)) * 24*60*60*1000);
 
     } else {
-      this.start = new Date();
+      this.start = TODAY;
       this.repeating = true;
       this.repeating_desc = repeating;
 
@@ -146,7 +173,7 @@ class CultureEvent {
 
     let time = document.createElement('span');
     time.classList.add('event_details-time');
-    time.textContent = `(${this.time}) ${this.start.getDate()}. ${this.start.toLocaleString('nb-NO', {month:'long'})}`;
+    time.textContent = `${DAYS[this.start.getDay()]} ${this.start.getDate()}. ${this.start.toLocaleString('nb-NO', {month:'long'})}`;
 
     let location = document.createElement('span');
     location.classList.add('event_details-location');
