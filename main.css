@@ -145,3 +145,26 @@ figcaption {
 .event_details-location::before {
   background-image: url("./location.svg");
 }
+
+.filter {
+  padding: 2em;
+  background-color: lightgrey;
+  display: flex;
+  flex-direction: row;
+}
+
+.filter .controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.filter .controls > div {
+  background-image: url("./skjul.svg");
+  background-repeat: no-repeat;
+  background-size: contain;
+  height: 2em;
+  width: 2em;
+  cursor: pointer;
+  opacity: .3;
+}

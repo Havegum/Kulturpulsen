@@ -8,40 +8,33 @@ let meta: Promise<any>;
 let map:google.maps.Map;
 let markers:google.maps.Marker[] = [];
 
-window.onload = function() {
-  let list = document.getElementById('list');
-  let title = <HTMLElement> document.getElementById('title');
+class FilterModule {
+  private container: DocumentFragment;
 
-  meta = getURL('./meta.json')
-    .then(JSON.parse)
-    .catch(() => title.textContent = 'Kunne ikke laste innhold');
+  constructor() {
+    this.container = document.createDocumentFragment();
+  }
 
+  draw(parent: HTMLElement | null): void {
+    let cont = this.container;
 
-  /*
-    The following block does this:
-      get the url using XMLHttpRequest
-      parse semicolon-delimetered csv
-      for each row:
-        filter rows with empty title
-        map to CultureEvent
-        filter invalid dates
-        sort by date
-        draw
-  */
-  getURL('./events.csv')
-    .then(parseCSV(';'))
-    .then((events: Array<Array<string>>) =>
-        events
-            .filter(rows => !!rows[0])
-            .map(rows => new CultureEvent(...rows))
-            .filter(evt => evt.repeating || evt.start.valueOf() > TODAY.valueOf())
-            .sort((a, b) => Math.sign(a.start.valueOf() - b.start.valueOf()))
-            .forEach(evt => evt.draw(list)))
+    let controls = document.createElement('div');
+    controls.classList.add('controls');
 
-      .then(() => { title.textContent = "Kommende arrangementer"; title.classList.remove('loading'); })
-      .catch(() => title.textContent = 'Kunne ikke laste innhold');
+    let title = document.createElement('h2');
+    title.textContent = 'Filtrer arrangementer';
 
-  initMap();
+    let hide_btn = document.createElement('div');
+    hide_btn.classList.add('hide_button');
+
+    controls.appendChild(title);
+    controls.appendChild(hide_btn);
+    cont.appendChild(controls);
+
+    (<HTMLElement> parent).appendChild(cont);
+    (<HTMLElement> parent).appendChild(document.createElement('ul'));
+
+  }
 }
 
 class CultureEvent {
@@ -56,7 +49,8 @@ class CultureEvent {
 
   private latlng?: google.maps.LatLngLiteral;
   private color: string;
-  private time: string;
+  private start_time: string;
+  private end_time: string;
 
   private container: HTMLLIElement;
 
@@ -107,7 +101,8 @@ class CultureEvent {
 
     }
 
-    this.time = start_date;
+    this.start_time = start_time;
+    this.end_time = end_time;
 
     this.color = '';
 
@@ -173,7 +168,12 @@ class CultureEvent {
 
     let time = document.createElement('span');
     time.classList.add('event_details-time');
-    time.textContent = `${DAYS[this.start.getDay()]} ${this.start.getDate()}. ${this.start.toLocaleString('nb-NO', {month:'long'})}`;
+    time.textContent =
+        DAYS[this.start.getDay()] + ' ' +
+        this.start.getDate() + '. ' +
+        this.start.toLocaleString('nb-NO', {month:'long'}) + ' ' +
+        this.start_time + (!this.end_time ? '' : '–' +
+        this.end_time);
 
     let location = document.createElement('span');
     location.classList.add('event_details-location');
@@ -193,6 +193,44 @@ class CultureEvent {
     if (node) { node.appendChild(li); }
   }
 }
+
+
+window.onload = function() {
+  let list = document.getElementById('list');
+  let title = <HTMLElement> document.getElementById('title');
+
+  meta = getURL('./meta.json')
+    .then(JSON.parse)
+    .catch(() => title.textContent = 'Kunne ikke laste innhold');
+
+
+  /*
+    The following block does this:
+      get the url using XMLHttpRequest
+      parse semicolon-delimetered csv
+      for each row:
+        filter rows with empty title
+        map to CultureEvent
+        filter invalid dates
+        sort by date
+        draw
+  */
+  getURL('./events.csv')
+    .then(parseCSV(';'))
+    .then((events: Array<Array<string>>) =>
+        events
+            .filter(rows => !!rows[0])
+            .map(rows => new CultureEvent(...rows))
+            .filter(evt => evt.repeating || evt.start.valueOf() > TODAY.valueOf())
+            .sort((a, b) => Math.sign(a.start.valueOf() - b.start.valueOf()))
+            .forEach(evt => evt.draw(list)))
+
+      .then(() => { title.textContent = "Kommende arrangementer"; title.classList.remove('loading'); })
+      .catch(() => title.textContent = 'Kunne ikke laste innhold');
+
+  initMap();
+}
+
 
 function getURL(url: string): Promise<any> {
   return new Promise(function(resolve, reject) {
@@ -413,4 +451,8 @@ function initMap() {
 
   map.mapTypes.set('styled_map', styledMapType);
   map.setMapTypeId('styled_map');
+
+  let filterModule: FilterModule = new FilterModule();
+  filterModule.draw(document.getElementById('filter'));
+
 }
