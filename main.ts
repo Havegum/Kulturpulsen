@@ -6,34 +6,108 @@ const TODAY:Date = new Date();
 
 let meta: Promise<any>;
 let map:google.maps.Map;
+let events:Promise<string | CultureEvent[]>;
 let markers:google.maps.Marker[] = [];
 
 class FilterModule {
-  private container: DocumentFragment;
+  private container: HTMLDivElement;
+  private categories: object;
 
-  constructor() {
-    this.container = document.createDocumentFragment();
+  constructor(categories:object) {
+    this.container = document.createElement('div');
+    this.categories = categories;
   }
 
-  draw(parent: HTMLElement | null): void {
+  draw(parent: HTMLElement): void {
     let cont = this.container;
+    let categories = this.categories;
 
-    let controls = document.createElement('div');
-    controls.classList.add('controls');
 
-    let title = document.createElement('h2');
-    title.textContent = 'Filtrer arrangementer';
+    Object.keys(categories).forEach(cat => {
+      let color = (<any> categories)[cat];
+      let toggler = new FilterToggle(cat, color);
+      cont.appendChild(toggler.draw());
+    });
 
-    let hide_btn = document.createElement('div');
-    hide_btn.classList.add('hide_button');
+    cont.classList.add('control');
+    parent.appendChild(cont);
 
-    controls.appendChild(title);
-    controls.appendChild(hide_btn);
-    cont.appendChild(controls);
+  }
+}
 
-    (<HTMLElement> parent).appendChild(cont);
-    (<HTMLElement> parent).appendChild(document.createElement('ul'));
+class FilterToggle {
+  private target:string;
+  private container: HTMLElement;
+  private color:string;
+  private name:string;
+  private checked:boolean;
+  private background?:HTMLSpanElement;
 
+  constructor(target:string, color:string) {
+    this.name = target;
+    this.target = target.replace(/\s/g, '-');
+    this.color = color;
+
+    this.container = document.createElement('div');
+    this.checked = false;
+  }
+
+  draw():HTMLElement {
+    let cont = this.container;
+    let self = this;
+
+    let label = document.createElement('label');
+    label.htmlFor = this.target + '_toggle';
+    label.textContent = this.name + ':';
+    cont.appendChild(label);
+
+    let switch_wrap = document.createElement('label');
+    switch_wrap.classList.add('switch');
+    cont.appendChild(switch_wrap);
+
+    let input = document.createElement('input');
+    input.type = 'checkbox';
+    input.id = this.target + '_toggle';
+    input.addEventListener('change', this.toggle());
+    switch_wrap.appendChild(input);
+
+    let slider = document.createElement('span');
+    slider.classList.add('slider');
+    this.background = slider;
+    switch_wrap.appendChild(slider);
+
+    // after building slider: toggle to desired state
+    this.toggle()({target:input});
+
+    return cont;
+  }
+
+  toggle(): (evt:any) => void {
+    // closure ensures the scope is correct
+    let color = this.color;
+    let self = this;
+
+    return function(evt:any) {
+      if (self.background) {
+        // toggle switches the value of checked
+        self.checked = !self.checked;
+        evt.target.checked = self.checked;
+        // ... then ensures the input reflects the inner logic
+        events.then(evts =>
+          (evts as CultureEvent[]).filter(evt => evt.category == self.name)
+            .forEach(evt => evt.setDisplay(self.checked))
+        );
+        if(self.checked) {
+          // ... then colors the background.
+          self.background.style.backgroundColor = color;
+
+
+        } else {
+          self.background.style.backgroundColor = '';
+
+        }
+      }
+    }
   }
 }
 
@@ -53,6 +127,7 @@ class CultureEvent {
   private end_time: string;
 
   private container: HTMLLIElement;
+  private marker?:google.maps.Marker;
 
 
   constructor(
@@ -126,9 +201,10 @@ class CultureEvent {
         strokeWeight: 15,
         fillColor: this.color,
         fillOpacity: .8,
-        scale: 5 + (this.hype * this.hype/4)
+        scale: 5 + (this.hype * this.hype / 4)
       }
     });
+    this.marker = circle;
     markers.push(circle);
   }
 
@@ -169,7 +245,7 @@ class CultureEvent {
     let time = document.createElement('span');
     time.classList.add('event_details-time');
     time.textContent =
-        DAYS[this.start.getDay()] + ' ' +
+        DAYS[(this.start.getDay()+5)%6] + ' ' +
         this.start.getDate() + '. ' +
         this.start.toLocaleString('nb-NO', {month:'long'}) + ' ' +
         this.start_time + (!this.end_time ? '' : '–' +
@@ -191,6 +267,12 @@ class CultureEvent {
     }
 
     if (node) { node.appendChild(li); }
+  }
+
+  setDisplay(visibility:boolean):void {
+    console.log(this);
+    this.container.style.display = (visibility ? '' : 'none');
+    (this.marker as google.maps.Marker).setMap(visibility ? map : null);
   }
 }
 
@@ -215,20 +297,29 @@ window.onload = function() {
         sort by date
         draw
   */
-  getURL('./events.csv')
+  events = getURL('./events.csv')
     .then(parseCSV(';'))
-    .then((events: Array<Array<string>>) =>
-        events
+    .then((evts: Array<Array<string>>) => {
+      let events = evts
             .filter(rows => !!rows[0])
             .map(rows => new CultureEvent(...rows))
             .filter(evt => evt.repeating || evt.start.valueOf() > TODAY.valueOf())
-            .sort((a, b) => Math.sign(a.start.valueOf() - b.start.valueOf()))
-            .forEach(evt => evt.draw(list)))
+            .sort((a, b) => Math.sign(a.start.valueOf() - b.start.valueOf()));
+      events.forEach(evt => evt.draw(list));
+      return events;
+      })
 
-      .then(() => { title.textContent = "Kommende arrangementer"; title.classList.remove('loading'); })
+      .then((e) => { title.textContent = "Kommende arrangementer"; title.classList.remove('loading'); return e; })
       .catch(() => title.textContent = 'Kunne ikke laste innhold');
 
+  // initialize map
   initMap();
+
+  // initialize filter module
+  meta.then(meta => {
+    let filterModule: FilterModule = new FilterModule(meta.kategorier);
+    filterModule.draw(<HTMLElement> document.getElementById('filter'));
+  });
 }
 
 
@@ -451,8 +542,4 @@ function initMap() {
 
   map.mapTypes.set('styled_map', styledMapType);
   map.setMapTypeId('styled_map');
-
-  let filterModule: FilterModule = new FilterModule();
-  filterModule.draw(document.getElementById('filter'));
-
 }
