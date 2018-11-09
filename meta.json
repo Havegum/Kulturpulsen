@@ -4,6 +4,7 @@
     "hulen": {"navn":"Hulen", "lat":60.384783, "lng":5.325368},
     "koengen": {"navn":"Koengen", "lat":60.400675, "lng":5.318864},
     "usf verftet": {"navn":"USF Verftet", "lat":60.395879, "lng":5.308950},
+    "røkeriet usf": {"navn":"Røkeriet USF", "lat":60.395879, "lng":5.308950},
     "cafe opera": {"navn":"Cafe Opera", "lat":60.391823, "lng":5.319869},
     "amalies hage": {"navn":"Amalies Hage", "lat":60.389914, "lng":5.332137},
     "vaskeriet": {"navn":"Vaskeriet", "lat":60.391507, "lng":5.319878},

@@ -7,7 +7,6 @@ const TODAY:Date = new Date();
 let meta: Promise<any>;
 let map:google.maps.Map;
 let events:Promise<string | CultureEvent[]>;
-let markers:google.maps.Marker[] = [];
 
 class FilterModule {
   private container: HTMLDivElement;
@@ -23,8 +22,10 @@ class FilterModule {
     let categories = this.categories;
 
 
+    // for each category to filter by, create a
+    // filtertoggle with the appropriate color
     Object.keys(categories).forEach(cat => {
-      let color = (<any> categories)[cat];
+      let color = (<any> categories)[cat] as string;
       let toggler = new FilterToggle(cat, color);
       cont.appendChild(toggler.draw());
     });
@@ -93,10 +94,14 @@ class FilterToggle {
         self.checked = !self.checked;
         evt.target.checked = self.checked;
         // ... then ensures the input reflects the inner logic
+
         events.then(evts =>
-          (evts as CultureEvent[]).filter(evt => evt.category == self.name)
+          (evts as CultureEvent[])
+            .filter(evt => evt.category == self.name)
+            .filter(evt => evt.hasMarker)
             .forEach(evt => evt.setDisplay(self.checked))
         );
+
         if(self.checked) {
           // ... then colors the background.
           self.background.style.backgroundColor = color;
@@ -120,6 +125,7 @@ class CultureEvent {
   public repeating_desc?: string;
   public repeating: boolean;
   public description: string;
+  public hasMarker: boolean;
 
   private latlng?: google.maps.LatLngLiteral;
   private color: string;
@@ -144,6 +150,7 @@ class CultureEvent {
   ) {
     this.title = title;
     this.location = location;
+    this.hasMarker = false;
 
     this.category = category;
     this.description = description;
@@ -182,11 +189,7 @@ class CultureEvent {
     this.color = '';
 
     meta.then(meta => {
-      if(!!meta.steder[this.location.trim().toLowerCase()])
-        this.latlng = meta.steder[this.location.trim().toLowerCase()];
-
-      if(!!meta.kategorier[this.category.trim()])
-        this.color = meta.kategorier[this.category.trim()];
+      this.color = meta.kategorier[this.category.trim()] || '';
     });
   }
 
@@ -205,17 +208,22 @@ class CultureEvent {
       }
     });
     this.marker = circle;
-    markers.push(circle);
+    this.hasMarker = true;
   }
 
   draw(node?: HTMLElement | null) {
     meta.then(meta => {
-      if(!!this.latlng) this.drawGoogleMarker();
+      // If meta has latlng information, draw the marker there.
+      this.latlng = meta.steder[this.location.trim().toLowerCase()] || undefined;
+      if(!!this.latlng) {
+        this.drawGoogleMarker();
+      } else {
+        console.error(`finner ikke stedet "${this.location}" for arrangement "${this.title}" – er stedet stavet riktig? Er stedet registrert riktig?`);
+      }
     });
 
     let li = this.container;
     li.classList.add('event');
-
 
     let sidebar = document.createElement('div');
     sidebar.classList.add('event_sidebar');
@@ -270,9 +278,8 @@ class CultureEvent {
   }
 
   setDisplay(visibility:boolean):void {
-    console.log(this);
     this.container.style.display = (visibility ? '' : 'none');
-    (this.marker as google.maps.Marker).setMap(visibility ? map : null);
+    if(this.marker) this.marker.setMap(visibility ? map : null);
   }
 }
 
@@ -307,10 +314,9 @@ window.onload = function() {
             .sort((a, b) => Math.sign(a.start.valueOf() - b.start.valueOf()));
       events.forEach(evt => evt.draw(list));
       return events;
-      })
-
-      .then((e) => { title.textContent = "Kommende arrangementer"; title.classList.remove('loading'); return e; })
-      .catch(() => title.textContent = 'Kunne ikke laste innhold');
+    })
+    .then((e) => { title.textContent = "Kommende arrangementer"; title.classList.remove('loading'); return e; })
+    .catch(() => title.textContent = 'Kunne ikke laste innhold');
 
   // initialize map
   initMap();
@@ -339,6 +345,7 @@ function getURL(url: string): Promise<any> {
     xhr.send(null);
   });
 }
+
 
 function parseCSV(delimeter: string) {
   return function(csv: string) {
@@ -542,4 +549,10 @@ function initMap() {
 
   map.mapTypes.set('styled_map', styledMapType);
   map.setMapTypeId('styled_map');
+
+  meta.then(meta => {
+    meta.steder.forEach(location => {
+      
+    });
+  });
 }

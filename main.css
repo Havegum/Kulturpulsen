@@ -170,7 +170,7 @@ figcaption {
   display:none;
 }
 
-@media only screen and (min-width: 720px) {
+@media only screen and (min-width: 735px) {
   .filter > h2 {
     display: inline;
     flex-shrink: 0;
