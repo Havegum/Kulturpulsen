@@ -166,7 +166,7 @@ figcaption {
 }
 
 
-.filter > h2 {
+.filter > h2, .display-none {
   display:none;
 }
 

@@ -3,10 +3,29 @@
 const DAYS:Array<string> = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
 const TODAY:Date = new Date();
 
+interface Place {
+    navn:string;
+    lat: number;
+    lng: number;
+    infowindow?: google.maps.InfoWindow;
+}
 
-let meta: Promise<any>;
+interface PlaceList {
+  [key: string]: Place
+}
+
+interface CategoryList {
+  [kategori: string]: string;
+}
+
+interface Meta {
+    steder: PlaceList;
+    kategorier: CategoryList;
+}
+
+// let meta: Promise<any>;
 let map:google.maps.Map;
-let events:Promise<string | CultureEvent[]>;
+// let events:Promise<string | CultureEvent[]>;
 
 class FilterModule {
   private container: HTMLDivElement;
@@ -17,7 +36,7 @@ class FilterModule {
     this.categories = categories;
   }
 
-  draw(parent: HTMLElement): void {
+  draw(parent: HTMLElement, events: CultureEvent[]): void {
     let cont = this.container;
     let categories = this.categories;
 
@@ -26,13 +45,13 @@ class FilterModule {
     // filtertoggle with the appropriate color
     Object.keys(categories).forEach(cat => {
       let color = (<any> categories)[cat] as string;
-      let toggler = new FilterToggle(cat, color);
+      let toggler = new FilterToggle(events, cat, color);
       cont.appendChild(toggler.draw());
     });
 
     cont.classList.add('control');
     parent.appendChild(cont);
-
+    parent.classList.remove('display-none');
   }
 }
 
@@ -43,8 +62,10 @@ class FilterToggle {
   private name:string;
   private checked:boolean;
   private background?:HTMLSpanElement;
+  private events: CultureEvent[];
 
-  constructor(target:string, color:string) {
+  constructor(events: CultureEvent[], target:string, color:string) {
+    this.events = events;
     this.name = target;
     this.target = target.replace(/\s/g, '-');
     this.color = color;
@@ -55,7 +76,6 @@ class FilterToggle {
 
   draw():HTMLElement {
     let cont = this.container;
-    let self = this;
 
     let label = document.createElement('label');
     label.htmlFor = this.target + '_toggle';
@@ -95,12 +115,9 @@ class FilterToggle {
         evt.target.checked = self.checked;
         // ... then ensures the input reflects the inner logic
 
-        events.then(evts =>
-          (evts as CultureEvent[])
-            .filter(evt => evt.category == self.name)
-            .filter(evt => evt.hasMarker)
-            .forEach(evt => evt.setDisplay(self.checked))
-        );
+        self.events.filter(evt => evt.category == self.name)
+              .filter(evt => evt.hasMarker)
+              .forEach(evt => evt.setDisplay(self.checked))
 
         if(self.checked) {
           // ... then colors the background.
@@ -127,7 +144,7 @@ class CultureEvent {
   public description: string;
   public hasMarker: boolean;
 
-  private latlng?: google.maps.LatLngLiteral;
+  private place?: Place;
   private color: string;
   private start_time: string;
   private end_time: string;
@@ -137,6 +154,7 @@ class CultureEvent {
 
 
   constructor(
+    meta:Meta,
     title = '',
     location = '',
     start_date = '',
@@ -186,17 +204,14 @@ class CultureEvent {
     this.start_time = start_time;
     this.end_time = end_time;
 
-    this.color = '';
-
-    meta.then(meta => {
-      this.color = meta.kategorier[this.category.trim()] || '';
-    });
+    this.color = meta.kategorier[this.category.trim()] || '';
+    this.place = meta.steder[this.location.trim().toLowerCase()] || undefined;
   }
 
   private drawGoogleMarker() {
-    let circle = new google.maps.Marker({
-      position: <google.maps.LatLngLiteral> this.latlng,
-      map:map,
+    let marker = new google.maps.Marker({
+      position: <google.maps.LatLngLiteral> this.place,
+      map: map,
       icon: {
         path: google.maps.SymbolPath.CIRCLE,
         strokeColor: this.color,
@@ -207,20 +222,25 @@ class CultureEvent {
         scale: 5 + (this.hype * this.hype / 4)
       }
     });
-    this.marker = circle;
+
+    this.marker = marker;
     this.hasMarker = true;
+
+    let self = this;
+    this.marker.addListener('click', function() {
+      if(self.place)
+        if(self.place.infowindow)
+          self.place.infowindow.open(map, marker);
+    })
   }
 
   draw(node?: HTMLElement | null) {
-    meta.then(meta => {
-      // If meta has latlng information, draw the marker there.
-      this.latlng = meta.steder[this.location.trim().toLowerCase()] || undefined;
-      if(!!this.latlng) {
-        this.drawGoogleMarker();
-      } else {
-        console.error(`finner ikke stedet "${this.location}" for arrangement "${this.title}" – er stedet stavet riktig? Er stedet registrert riktig?`);
-      }
-    });
+    // If meta has latlng information, draw the marker there.
+    if(!!this.place) {
+      this.drawGoogleMarker();
+    } else {
+      console.error(`finner ikke stedet "${this.location}" for arrangement "${this.title}" – er stedet stavet riktig? Er stedet registrert riktig?`);
+    }
 
     let li = this.container;
     li.classList.add('event');
@@ -230,8 +250,7 @@ class CultureEvent {
 
     let sb_point = document.createElement('div');
     sb_point.classList.add('event_sidebar-point');
-    meta.then(json =>
-      sb_point.style.backgroundColor = json.kategorier[this.category]);
+    sb_point.style.backgroundColor = this.color;
 
     let sb_repeat = document.createElement('div');
     sb_repeat.classList.add('event_sidebar-repeating-points')
@@ -288,44 +307,60 @@ window.onload = function() {
   let list = document.getElementById('list');
   let title = <HTMLElement> document.getElementById('title');
 
-  meta = getURL('./meta.json')
-    .then(JSON.parse)
-    .catch(() => title.textContent = 'Kunne ikke laste innhold');
+  let meta = getURL('./meta.json').then(JSON.parse).then(meta => meta as Meta);
+  let events = getURL('./events.csv').then(parseCSV(';'));
+
+  Promise.all([meta, events]).then(promise => {
+    let [meta, events_csv] = [promise[0], promise[1]];
 
 
-  /*
-    The following block does this:
-      get the url using XMLHttpRequest
-      parse semicolon-delimetered csv
-      for each row:
-        filter rows with empty title
-        map to CultureEvent
-        filter invalid dates
-        sort by date
-        draw
-  */
-  events = getURL('./events.csv')
-    .then(parseCSV(';'))
-    .then((evts: Array<Array<string>>) => {
-      let events = evts
+      /* LETS GET EVENTS UP AND RUNNING
+
+        The following block does this:
+          for each row:
+            filter rows with empty title
+            map to CultureEvent
+            filter invalid dates
+            sort by date
+            draw
+      */
+      let events = events_csv
             .filter(rows => !!rows[0])
-            .map(rows => new CultureEvent(...rows))
+            .map(rows => new CultureEvent(meta, ...rows))
             .filter(evt => evt.repeating || evt.start.valueOf() > TODAY.valueOf())
             .sort((a, b) => Math.sign(a.start.valueOf() - b.start.valueOf()));
       events.forEach(evt => evt.draw(list));
-      return events;
-    })
-    .then((e) => { title.textContent = "Kommende arrangementer"; title.classList.remove('loading'); return e; })
-    .catch(() => title.textContent = 'Kunne ikke laste innhold');
+
+
+      /* OKAY WE'RE GOOD, TIME FOR META STUFF */
+
+    Object.keys(meta.steder).forEach(loc => {
+      let location = meta.steder[loc];
+
+      location.infowindow = new google.maps.InfoWindow({
+        content:`<div>\
+        <h4>${location.navn}</h4>\
+        <br>\
+        <p>${(<CultureEvent[]> events).filter(e => e.location == location.navn).map(e => e.title).join('<br>')}</p>\
+        </div>`,
+        position: {lat:location.lat, lng:location.lng}
+      });
+
+    });
+    console.log(meta.steder)
+
+    // initialize filter module
+    let filterModule: FilterModule = new FilterModule(meta.kategorier);
+    filterModule.draw(<HTMLElement> document.getElementById('filter'), events);
+
+
+    title.textContent = "Kommende arrangementer";
+    title.classList.remove('loading');
+  })
+  .catch(() => title.textContent = 'Kunne ikke laste innhold');
 
   // initialize map
   initMap();
-
-  // initialize filter module
-  meta.then(meta => {
-    let filterModule: FilterModule = new FilterModule(meta.kategorier);
-    filterModule.draw(<HTMLElement> document.getElementById('filter'));
-  });
 }
 
 
@@ -549,10 +584,4 @@ function initMap() {
 
   map.mapTypes.set('styled_map', styledMapType);
   map.setMapTypeId('styled_map');
-
-  meta.then(meta => {
-    meta.steder.forEach(location => {
-      
-    });
-  });
 }
