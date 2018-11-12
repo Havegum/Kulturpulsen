@@ -25,10 +25,10 @@
     "akvariet": {"navn":"Akvariet", "lat":60.399760, "lng":5.303542}
   },
   "kategorier":{
-    "Konsert":"#cb1a20",
+    "Prøv noe nytt":"#d63ed6",
     "Quiz":"#169754",
-    "Debatt og samfunn":"#107aac",
-    "Prøv noe nytt":"#cccccc",
-    "Festival":"#e0631f"
+    "Festival":"#e0631f",
+    "Konsert":"#cb1a20",
+    "Debatt og samfunn":"#107aac"
   }
 }

@@ -271,3 +271,11 @@ input:checked + .slider:before {
 
  background-color: white;
 }
+
+.infowindow-point {
+  display: inline-block;
+  width:.6em;
+  height:.6em;
+  margin-right: .4em;
+  border-radius: .5em;
+}

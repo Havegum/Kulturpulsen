@@ -3,6 +3,9 @@
 const DAYS:Array<string> = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
 const TODAY:Date = new Date();
 
+let map:google.maps.Map;
+let global_infowindow:google.maps.InfoWindow | undefined;
+
 interface Place {
     navn:string;
     lat: number;
@@ -22,10 +25,6 @@ interface Meta {
     steder: PlaceList;
     kategorier: CategoryList;
 }
-
-// let meta: Promise<any>;
-let map:google.maps.Map;
-// let events:Promise<string | CultureEvent[]>;
 
 class FilterModule {
   private container: HTMLDivElement;
@@ -143,9 +142,9 @@ class CultureEvent {
   public repeating: boolean;
   public description: string;
   public hasMarker: boolean;
+  public color: string;
 
   private place?: Place;
-  private color: string;
   private start_time: string;
   private end_time: string;
 
@@ -228,10 +227,12 @@ class CultureEvent {
 
     let self = this;
     this.marker.addListener('click', function() {
-      if(self.place)
-        if(self.place.infowindow)
-          self.place.infowindow.open(map, marker);
-    })
+      if(self.place && self.place.infowindow) {
+          if(global_infowindow) global_infowindow.close();
+          global_infowindow = self.place.infowindow;
+          global_infowindow.open(map, marker);
+        }
+    });
   }
 
   draw(node?: HTMLElement | null) {
@@ -338,13 +339,20 @@ window.onload = function() {
       let location = meta.steder[loc];
 
       location.infowindow = new google.maps.InfoWindow({
-        content:`<div>\
-        <h4>${location.navn}</h4>\
-        <br>\
-        <p>${(<CultureEvent[]> events).filter(e => e.location == location.navn).map(e => e.title).join('<br>')}</p>\
+        content:
+        `<div  class="infowindow">\
+          <h4>${location.navn}</h4>\
+          <br>\
+          <p>
+            ${(<CultureEvent[]> events)
+              .filter(e => e.location.toLowerCase() == location.navn.toLowerCase())
+              .map(e => `<div class="infowindow-point" style="background-color:${e.color}"></div>${e.title}`)
+              .join('<br>')}\
+          </p>
         </div>`,
         position: {lat:location.lat, lng:location.lng}
       });
+      // TODO: Anchors that point to the event
 
     });
     console.log(meta.steder)
