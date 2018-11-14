@@ -3,6 +3,7 @@
 const DAYS:Array<string> = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
 const TODAY:Date = new Date();
 
+let filtered:Array<string> = [];
 let map:google.maps.Map;
 let global_infowindow:google.maps.InfoWindow | undefined;
 
@@ -104,29 +105,23 @@ class FilterToggle {
 
   toggle(): (evt:any) => void {
     // closure ensures the scope is correct
-    let color = this.color;
     let self = this;
 
     return function(evt:any) {
       if (self.background) {
         // toggle switches the value of checked
         self.checked = !self.checked;
-        evt.target.checked = self.checked;
-        // ... then ensures the input reflects the inner logic
 
+        // ... then ensures the input reflects the inner logic
+        evt.target.checked = self.checked;
+
+        // then filters list items and map markers
         self.events.filter(evt => evt.category == self.name)
               .filter(evt => evt.hasMarker)
               .forEach(evt => evt.setDisplay(self.checked))
 
-        if(self.checked) {
-          // ... then colors the background.
-          self.background.style.backgroundColor = color;
-
-
-        } else {
-          self.background.style.backgroundColor = '';
-
-        }
+        // ... then colors the background of the toggle switch
+        self.background.style.color = (self.checked ? self.color : '');
       }
     }
   }
@@ -177,26 +172,29 @@ class CultureEvent {
 
     this.repeating = false;
 
-    // string is a date
+    // if string is a date
     if(start_date.match(/\d\d\.\d\d\.\d{4}/)) {
       let d:number[] = start_date.trim().split('.').map(n => +n);
       this.start = new Date(d[2], d[1]-1, d[0]);
 
-    // string is a day of the week
+    // if string is a day of the week
     } else if(DAYS.indexOf(start_date) > -1) {
       let day:number = DAYS.indexOf(start_date);
       let currentDay:number = (TODAY.getDay() + 5) % 6; // +5%6 makes monday first day
 
       let dayHasPassed:boolean = day < currentDay;
 
+      this.repeating = true;
+      this.repeating_desc = repeating;
+
       // if day has passed, add 7 subtract the difference
       this.start = new Date(TODAY.getTime() +
         (day - currentDay + (dayHasPassed ? 7 : 0)) * 24*60*60*1000);
 
+    // if neither, print error
     } else {
-      this.start = TODAY;
-      this.repeating = true;
-      this.repeating_desc = repeating;
+      this.start = new Date(0);
+      console.error(`Arrangementet "${title.trim()}" mangler dato eller ukedag.`)
 
     }
 
@@ -298,7 +296,7 @@ class CultureEvent {
   }
 
   setDisplay(visibility:boolean):void {
-    this.container.style.display = (visibility ? '' : 'none');
+    this.container.classList.toggle('event_hidden', !visibility);
     if(this.marker) this.marker.setMap(visibility ? map : null);
   }
 }
@@ -328,7 +326,7 @@ window.onload = function() {
       let events = events_csv
             .filter(rows => !!rows[0])
             .map(rows => new CultureEvent(meta, ...rows))
-            .filter(evt => evt.repeating || evt.start.valueOf() > TODAY.valueOf())
+            .filter(evt => evt.repeating || evt.start && evt.start.valueOf() > TODAY.valueOf())
             .sort((a, b) => Math.sign(a.start.valueOf() - b.start.valueOf()));
       events.forEach(evt => evt.draw(list));
 
@@ -355,7 +353,6 @@ window.onload = function() {
       // TODO: Anchors that point to the event
 
     });
-    console.log(meta.steder)
 
     // initialize filter module
     let filterModule: FilterModule = new FilterModule(meta.kategorier);
