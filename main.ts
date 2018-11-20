@@ -28,6 +28,7 @@ interface Meta {
 }
 
 class FilterModule {
+  // TODO: Filter weekly events pls
   private container: HTMLDivElement;
   private categories: object;
 
