@@ -1,4 +1,4 @@
- @import url('https://fonts.googleapis.com/css?family=Roboto');
+@import url('https://fonts.googleapis.com/css?family=Roboto');
 
 @font-face {
   font-family: "Avenir";
@@ -96,10 +96,24 @@ figcaption {
 }
 
 .event {
-  margin: 0 0 1.5em;
+  margin: 0 0 1em;
+  padding: 0 0 .5em;
   display: flex;
   flex-direction: row;
   min-height: 3em;
+}
+
+@keyframes highlight {
+    from { background-color: lightgrey; }
+    to { background-color: white; }
+}
+
+.event:target {
+  animation: highlight 1s normal forwards linear;
+}
+
+.event:target h2 {
+  text-decoration: underline;
 }
 
 .event_hidden {
@@ -162,6 +176,17 @@ figcaption {
 }
 .event_details-location::before {
   background-image: url("./location.svg");
+}
+
+.location-anchor,
+.infowindow a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.location-anchor:hover,
+.infowindow a:hover {
+  text-decoration: underline;
 }
 
 .filter {

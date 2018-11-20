@@ -121,7 +121,7 @@ class FilterToggle {
               .forEach(evt => evt.setDisplay(self.checked))
 
         // ... then colors the background of the toggle switch
-        self.background.style.color = (self.checked ? self.color : '');
+        self.background.style.backgroundColor = (self.checked ? self.color : '');
       }
     }
   }
@@ -243,6 +243,8 @@ class CultureEvent {
 
     let li = this.container;
     li.classList.add('event');
+    li.id = this.title.trim().replace(/\s/g, '-');
+
 
     let sidebar = document.createElement('div');
     sidebar.classList.add('event_sidebar');
@@ -277,7 +279,23 @@ class CultureEvent {
         this.start_time + (!this.end_time ? '' : '–' +
         this.end_time);
 
-    let location = document.createElement('span');
+    let marker = this.marker;
+    let location = document.createElement('a');
+    location.href = '#';
+    location.classList.add('location-anchor')
+
+    let place:Place | undefined = this.place;
+
+    location.onclick = function(){
+      if(place && place.infowindow && marker) {
+        window.scrollTo(0,0);
+
+        if(global_infowindow) global_infowindow.close();
+        global_infowindow = place.infowindow;
+        global_infowindow.open(map, marker);
+      }
+    }
+
     location.classList.add('event_details-location');
     location.textContent = this.location;
 
@@ -306,8 +324,10 @@ window.onload = function() {
   let list = document.getElementById('list');
   let title = <HTMLElement> document.getElementById('title');
 
+  let parser = parseCSV(';');
+
   let meta = getURL('./meta.json').then(JSON.parse).then(meta => meta as Meta);
-  let events = getURL('./events.csv').then(parseCSV(';'));
+  let events = getURL('./events.csv').then(response => parser(response));
 
   Promise.all([meta, events]).then(promise => {
     let [meta, events_csv] = [promise[0], promise[1]];
@@ -344,7 +364,10 @@ window.onload = function() {
           <p>
             ${(<CultureEvent[]> events)
               .filter(e => e.location.toLowerCase() == location.navn.toLowerCase())
-              .map(e => `<div class="infowindow-point" style="background-color:${e.color}"></div>${e.title}`)
+              .map(e =>
+                `<a href="#${e.title.trim().replace(/\s/g, '-')}">\
+                <div class="infowindow-point" style="background-color:${e.color}"></div>\
+                ${e.title}</a>`)
               .join('<br>')}\
           </p>
         </div>`,
@@ -389,8 +412,11 @@ function getURL(url: string): Promise<any> {
 
 function parseCSV(delimeter: string) {
   return function(csv: string) {
-    let rows = csv.split(/\r\n/gi).slice(1, -1);
-    return rows.map(row => row.split(delimeter));
+    let rows;
+    rows = csv.split(/(\r)?\n/gi);
+    rows = rows.slice(1, -1);
+    rows = rows.filter(e => e !== undefined).map(row => row.split(delimeter));
+    return rows;
   }
 }
 
