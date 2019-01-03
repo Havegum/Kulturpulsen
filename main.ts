@@ -1,5 +1,9 @@
 /// <reference types="@types/googlemaps" />
 
+// TODO: REMOVE
+// import GetSheetDone from 'get-sheet-done';
+
+
 const DAYS:Array<string> = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
 const TODAY:Date = new Date();
 
@@ -28,25 +32,31 @@ interface Meta {
 }
 
 class FilterModule {
-  // TODO: Filter weekly events pls
+  // TODO: Filter repeating events pls
   private container: HTMLDivElement;
   private categories: object;
+  private togglerList: FilterToggle[];
 
   constructor(categories:object) {
     this.container = document.createElement('div');
     this.categories = categories;
+    this.togglerList = [];
   }
 
   draw(parent: HTMLElement, events: CultureEvent[]): void {
     let cont = this.container;
     let categories = this.categories;
+    let checkAllEmpty = this.checkAllEmpty;
+    let togglerList = this.togglerList;
 
 
     // for each category to filter by, create a
     // filtertoggle with the appropriate color
     Object.keys(categories).forEach(cat => {
       let color = (<any> categories)[cat] as string;
-      let toggler = new FilterToggle(events, cat, color);
+      let toggler = new FilterToggle(events, cat, color, checkAllEmpty);
+      togglerList.push(toggler);
+
       cont.appendChild(toggler.draw());
     });
 
@@ -54,6 +64,15 @@ class FilterModule {
     parent.appendChild(cont);
     parent.classList.remove('display-none');
   }
+
+  checkAllEmpty() {
+      throw new Error("Not implemented yet");
+
+      // TODO:
+      // 1: if all filters are off, display cute bear struggling with controls
+      // 2: if not all filters are off, but no results: display cute sheep looking for things
+  }
+
 }
 
 class FilterToggle {
@@ -64,12 +83,14 @@ class FilterToggle {
   private checked:boolean;
   private background?:HTMLSpanElement;
   private events: CultureEvent[];
+  private alertParent: Function;
 
-  constructor(events: CultureEvent[], target:string, color:string) {
+  constructor(events: CultureEvent[], target:string, color:string, alertParent: Function) {
     this.events = events;
     this.name = target;
     this.target = target.replace(/\s/g, '-');
     this.color = color;
+    this.alertParent = alertParent;
 
     this.container = document.createElement('div');
     this.checked = false;
@@ -113,8 +134,11 @@ class FilterToggle {
         // toggle switches the value of checked
         self.checked = !self.checked;
 
-        // ... then ensures the input reflects the inner logic
+        // ... then ensures the input element reflects the inner logic
         evt.target.checked = self.checked;
+
+        // alert parent
+        self.alertParent();
 
         // then filters list items and map markers
         self.events.filter(evt => evt.category == self.name)
@@ -158,8 +182,8 @@ class CultureEvent {
     end_time = '',
     category = '',
     hype = '',
-    repeating = '',
-    description = ''
+    description = '',
+    repeating = ''
   ) {
     this.title = title;
     this.location = location;
@@ -325,14 +349,23 @@ window.onload = function() {
   let list = document.getElementById('list');
   let title = <HTMLElement> document.getElementById('title');
 
-  let parser = parseCSV(';');
+  let parse = parseCSV('\t');
 
-  let meta = getURL('./meta.json').then(JSON.parse).then(meta => meta as Meta);
-  let events = getURL('./events.csv').then(response => parser(response));
+  let eventsURL =   'https://docs.google.com/spreadsheets/d/e/2PACX-1vT3xJC11F5tBLqNYTETN8hAdqBy0OV3vTMt6VjdLLVcvGi_yo0N2fSp8FY9SRFhaI-Pr-FzYnc86Ycj/pub?gid=0&single=true&output=tsv';
+  let categoriesURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT3xJC11F5tBLqNYTETN8hAdqBy0OV3vTMt6VjdLLVcvGi_yo0N2fSp8FY9SRFhaI-Pr-FzYnc86Ycj/pub?gid=1573476937&single=true&output=tsv';
+  let placesURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT3xJC11F5tBLqNYTETN8hAdqBy0OV3vTMt6VjdLLVcvGi_yo0N2fSp8FY9SRFhaI-Pr-FzYnc86Ycj/pub?gid=606272667&single=true&output=tsv';
 
-  Promise.all([meta, events]).then(promise => {
-    let [meta, events_csv] = [promise[0], promise[1]];
+  let events = getURL(eventsURL).then(parse);
+  let places = getURL(placesURL).then(parse).then(toPlaceList)
+  let categories = getURL(categoriesURL).then(parse).then(toCategoryList)
 
+  Promise.all([events, places, categories]).then(promise => {
+    let [events_csv, places, categories] = [promise[0], promise[1], promise[2]];
+
+    let meta:Meta = {
+      steder: places,
+      kategorier:categories
+    }
 
       /* LETS GET EVENTS UP AND RUNNING
 
@@ -345,14 +378,14 @@ window.onload = function() {
             draw
       */
       let events = events_csv
-            .filter(rows => !!rows[0])
+            .filter(rows => !!rows[0].trim())
             .map(rows => new CultureEvent(meta, ...rows))
             .filter(evt => evt.repeating || evt.start && evt.start.valueOf() > TODAY.valueOf())
             .sort((a, b) => Math.sign(a.start.valueOf() - b.start.valueOf()));
       events.forEach(evt => evt.draw(list));
 
 
-      /* OKAY WE'RE GOOD, TIME FOR META STUFF */
+    /* OKAY WE'RE GOOD, TIME FOR META STUFF */
 
     Object.keys(meta.steder).forEach(loc => {
       let location = meta.steder[loc];
@@ -410,15 +443,40 @@ function getURL(url: string): Promise<any> {
   });
 }
 
-
 function parseCSV(delimeter: string) {
   return function(csv: string) {
     let rows;
     rows = csv.split(/(\r)?\n/gi);
-    rows = rows.slice(1, -1);
+    rows.shift()
+    // rows = rows.slice(1, -1);
     rows = rows.filter(e => e !== undefined).map(row => row.split(delimeter));
     return rows;
   }
+}
+
+function toCategoryList(input: string[][]): CategoryList {
+  let categoryList:CategoryList = {};
+  input.filter(i => !!i[0].trim())
+    .forEach(i => categoryList[i[0].replace('"', '')] = i[1])
+  return categoryList
+}
+
+function toPlaceList(input: string[][]): PlaceList {
+  let placeList: PlaceList = {};
+
+  input.filter(i => !!i[0].trim())
+    .map(i => {
+      return {
+        key:i[0],
+        place:{
+          navn: i[1],
+          lat: +i[2],
+          lng: +i[3]}
+        };
+    })
+    .forEach(i => placeList[i.key] = i.place)
+
+  return placeList;
 }
 
 

@@ -206,26 +206,10 @@ figcaption {
   display:none;
 }
 
-@media only screen and (min-width: 735px) {
-  .filter > h2 {
-    display: inline;
-    flex-shrink: 0;
-    margin-right: 2em;
-  }
-
-  header > div > p {
-    margin: 0 .5em 0 0;
-  }
-
-  header img {
-    display: inline-block;
-  }
-}
-
 .filter > .control {
   justify-content: space-between;
   flex-flow: row-reverse wrap;
-  flex-grow: 1;
+  flex-grow: 2;
 }
 
 .filter > .control,
@@ -238,6 +222,26 @@ figcaption {
   flex-direction: row;
   flex-shrink: 0;
   margin: .5em 0;
+}
+
+@media only screen and (min-width: 735px) {
+  .filter > h2 {
+    display: inline;
+    flex-shrink: 0;
+    margin-right: 2em;
+    flex-grow: 1;
+  }
+  .filter > .control {
+    justify-content: space-around;
+  }
+
+  header > div > p {
+    margin: 0 .5em 0 0;
+  }
+
+  header img {
+    display: inline-block;
+  }
 }
 
 label {

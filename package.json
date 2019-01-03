@@ -1,0 +1,23 @@
+{
+  "name": "kulturpulsen",
+  "version": "1.0.0",
+  "description": "Studvests arrangementoversikt - kulturpulsen",
+  "main": "main.js",
+  "dependencies": {
+    "@types/googlemaps": "^3.30.16"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Havegum/Kulturpulsen.git"
+  },
+  "author": "Halvard A. Vegum",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Havegum/Kulturpulsen/issues"
+  },
+  "homepage": "https://github.com/Havegum/Kulturpulsen#readme"
+}
