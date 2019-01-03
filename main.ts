@@ -1,9 +1,5 @@
 /// <reference types="@types/googlemaps" />
 
-// TODO: REMOVE
-// import GetSheetDone from 'get-sheet-done';
-
-
 const DAYS:Array<string> = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
 const TODAY:Date = new Date();
 
@@ -36,14 +32,20 @@ class FilterModule {
   private container: HTMLDivElement;
   private categories: object;
   private togglerList: FilterToggle[];
+  private events: CultureEvent[];
+  private evts_container: HTMLElement | null;
+  private evts_title: HTMLElement | null;
 
-  constructor(categories:object) {
+  constructor(categories:object, events: CultureEvent[]) {
     this.container = document.createElement('div');
     this.categories = categories;
     this.togglerList = [];
+    this.events = events;
+    this.evts_container = document.getElementById('list');
+    this.evts_title = document.getElementById('title');
   }
 
-  draw(parent: HTMLElement, events: CultureEvent[]): void {
+  draw(parent: HTMLElement): void {
     let cont = this.container;
     let categories = this.categories;
     let checkAllEmpty = this.checkAllEmpty;
@@ -54,7 +56,7 @@ class FilterModule {
     // filtertoggle with the appropriate color
     Object.keys(categories).forEach(cat => {
       let color = (<any> categories)[cat] as string;
-      let toggler = new FilterToggle(events, cat, color, checkAllEmpty);
+      let toggler = new FilterToggle(this.events, cat, color, checkAllEmpty.bind(this));
       togglerList.push(toggler);
 
       cont.appendChild(toggler.draw());
@@ -65,22 +67,39 @@ class FilterModule {
     parent.classList.remove('display-none');
   }
 
-  checkAllEmpty() {
-      throw new Error("Not implemented yet");
+  checkAllEmpty(toggler: FilterToggle) {
+    if(!this.evts_container || !this.evts_title) return;
+    let container = <HTMLDivElement> this.evts_container;
+    let title = <HTMLHeadingElement> this.evts_title;
 
-      // TODO:
-      // 1: if all filters are off, display cute bear struggling with controls
+    if (!this.events.reduce((a:boolean, b) =>  a || b.isVisible, false)) {
       // 2: if not all filters are off, but no results: display cute sheep looking for things
+      container.classList.add('no-events-found');
+      title.classList.add('no-events-found');
+    } else {
+      container.classList.remove('no-events-found');
+      title.classList.remove('no-events-found');
+    }
+
+    if(!this.togglerList.reduce((a:boolean, b) => a || b.checked, false)) {
+      // 1: if all filters are off, display cute bear struggling with controls
+      container.classList.add('no-filters-enabled');
+      title.classList.add('no-filters-enabled');
+    } else {
+      container.classList.remove('no-filters-enabled');
+      title.classList.remove('no-filters-enabled');
+    }
   }
 
 }
 
 class FilterToggle {
+  public checked:boolean;
+
   private target:string;
   private container: HTMLElement;
   private color:string;
   private name:string;
-  private checked:boolean;
   private background?:HTMLSpanElement;
   private events: CultureEvent[];
   private alertParent: Function;
@@ -138,12 +157,13 @@ class FilterToggle {
         evt.target.checked = self.checked;
 
         // alert parent
-        self.alertParent();
 
         // then filters list items and map markers
         self.events.filter(evt => evt.category == self.name)
               .filter(evt => evt.hasMarker)
-              .forEach(evt => evt.setDisplay(self.checked))
+              .forEach(evt => evt.setDisplay(self.checked));
+
+        self.alertParent(self);
 
         // ... then colors the background of the toggle switch
         self.background.style.backgroundColor = (self.checked ? self.color : '');
@@ -163,6 +183,7 @@ class CultureEvent {
   public description: string;
   public hasMarker: boolean;
   public color: string;
+  public isVisible: boolean = true;
 
   private place?: Place;
   private start_time: string;
@@ -341,6 +362,7 @@ class CultureEvent {
   setDisplay(visibility:boolean):void {
     this.container.classList.toggle('event_hidden', !visibility);
     if(this.marker) this.marker.setMap(visibility ? map : null);
+    this.isVisible = visibility;
   }
 }
 
@@ -412,8 +434,8 @@ window.onload = function() {
     });
 
     // initialize filter module
-    let filterModule: FilterModule = new FilterModule(meta.kategorier);
-    filterModule.draw(<HTMLElement> document.getElementById('filter'), events);
+    let filterModule: FilterModule = new FilterModule(meta.kategorier, events);
+    filterModule.draw(<HTMLElement> document.getElementById('filter'));
 
 
     title.textContent = "Kommende arrangementer";
