@@ -156,13 +156,12 @@ class FilterToggle {
         // ... then ensures the input element reflects the inner logic
         evt.target.checked = self.checked;
 
-        // alert parent
-
         // then filters list items and map markers
         self.events.filter(evt => evt.category == self.name)
-              .filter(evt => evt.hasMarker)
+              // .filter(evt => evt.hasMarker)
               .forEach(evt => evt.setDisplay(self.checked));
 
+        // alert parent
         self.alertParent(self);
 
         // ... then colors the background of the toggle switch
@@ -284,7 +283,7 @@ class CultureEvent {
     if(!!this.place) {
       this.drawGoogleMarker();
     } else {
-      console.error(`finner ikke stedet "${this.location}" for arrangement "${this.title}" – er stedet stavet riktig? Er stedet registrert riktig?`);
+      console.error(`Finner ikke stedet "${this.location}" for arrangement "${this.title}" – er stedet stavet riktig? Er stedet registrert riktig?`);
     }
 
     let li = this.container;
@@ -297,6 +296,8 @@ class CultureEvent {
 
     let sb_point = document.createElement('div');
     sb_point.classList.add('event_sidebar-point');
+    let scale = (this.hype * 0.2) + 0.4;
+    sb_point.style.transform = 'scale3d('+scale+','+scale+',1)';
     sb_point.style.backgroundColor = this.color;
 
     let sb_repeat = document.createElement('div');
@@ -327,16 +328,17 @@ class CultureEvent {
 
     let marker = this.marker;
     let location = document.createElement('a');
-    location.href = '#';
+
+    location.href = '#_';
     location.classList.add('location-anchor')
+      let place:Place | undefined = this.place;
 
-    let place:Place | undefined = this.place;
-
-    location.onclick = function(){
-      if(place && place.infowindow && marker) {
-        window.scrollTo(0,0);
+      location.onclick = function () {
+        if(place && place.infowindow && marker) {
+        window.scrollTo({left:0, top:0, behavior:'smooth'});
 
         if(global_infowindow) global_infowindow.close();
+
         global_infowindow = place.infowindow;
         global_infowindow.open(map, marker);
       }
@@ -352,7 +354,7 @@ class CultureEvent {
 
     if (this.description) {
       let p = document.createElement('p');
-      p.textContent = this.description;
+      p.innerHTML = this.description;
       content.appendChild(p);
     }
 
@@ -404,6 +406,8 @@ window.onload = function() {
             .map(rows => new CultureEvent(meta, ...rows))
             .filter(evt => evt.repeating || evt.start && evt.start.valueOf() > TODAY.valueOf())
             .sort((a, b) => Math.sign(a.start.valueOf() - b.start.valueOf()));
+
+
       events.forEach(evt => evt.draw(list));
 
 
@@ -421,7 +425,7 @@ window.onload = function() {
             ${(<CultureEvent[]> events)
               .filter(e => e.location.toLowerCase() == location.navn.toLowerCase())
               .map(e =>
-                `<a href="#${e.title.trim().replace(/\s/g, '-')}">\
+                `<a href="#" onmousedown="jumpTo('${e.title.trim().replace(/\s/g, '-')}')">\
                 <div class="infowindow-point" style="background-color:${e.color}"></div>\
                 ${e.title}</a>`)
               .join('<br>')}\
@@ -429,8 +433,6 @@ window.onload = function() {
         </div>`,
         position: {lat:location.lat, lng:location.lng}
       });
-      // TODO: Anchors that point to the event
-
     });
 
     // initialize filter module
@@ -470,7 +472,6 @@ function parseCSV(delimeter: string) {
     let rows;
     rows = csv.split(/(\r)?\n/gi);
     rows.shift()
-    // rows = rows.slice(1, -1);
     rows = rows.filter(e => e !== undefined).map(row => row.split(delimeter));
     return rows;
   }
@@ -501,6 +502,18 @@ function toPlaceList(input: string[][]): PlaceList {
   return placeList;
 }
 
+function jumpTo(evt_id: string) {
+  let target = document.getElementById(evt_id);
+  if(target) {
+    document.location.hash = evt_id;
+    window.scrollTo(0,0);
+
+    target.scrollIntoView({ behavior:'smooth', block:'center' });
+    // TODO: Breaks in safari, add polyfill?
+    // window.scrollTo({top:target.scrollTop, left:0, behavior:'smooth'})
+  }
+  return target;
+}
 
 function initMap() {
   var bergen = { lat: 60.390711, lng: 5.323165 };

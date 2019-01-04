@@ -22,7 +22,7 @@ body {
 }
 
 h1 {
-  margin: 1em 0 .5em;
+  margin: 1em .5em .5em;
   font-size: 2em;
 }
 
@@ -83,14 +83,31 @@ figcaption {
 .copy {
   background-color: #eee;
   flex-grow: 1;
+  display: flex;
+  flex-flow: row nowrap;
+}
+
+.sidebar {
+  flex-grow: 1;
+  background-repeat: no-repeat;
+}
+
+.sidebar-left {
+  background-image: url("./sidebar-left.jpg");
+  background-position: top right;
+
+}
+
+.sidebar-right {
+  background-image: url("./sidebar-right.jpg");
+  background-position: top left;
 }
 
 .copy-container {
   list-style: none;
   background-color: white;
-  margin: 0 auto 3em;
   max-width: 50em;
-  padding: 1em 2em;
+  padding: 1em 1em;
   border-radius: 0 0 3px 3px;
   box-shadow: 0 2px 4px #0002;
 }
@@ -140,20 +157,28 @@ h1.no-filters-enabled {
 }
 
 .event {
-  margin: 0 0 1em;
-  padding: 0 0 .5em;
+  /* margin: 0 0 1em; */
+  padding: 0.5em .5em 1em;
   display: flex;
   flex-direction: row;
   min-height: 3em;
+  border-radius: 8px;
+}
+
+.event p {
+  max-width: 30em;
+  line-height: 1.2em;
+  margin-top: .2em;
 }
 
 @keyframes highlight {
-    from { background-color: lightgrey; }
-    to { background-color: white; }
+    0% { background-color: lightgrey; }
+    50% { background-color: lightgrey; }
+    100% { background-color: white; }
 }
 
 .event:target {
-  animation: highlight 1s normal forwards linear;
+  animation: highlight  2s normal forwards ease-in;
 }
 
 .event:target h2 {
@@ -286,6 +311,10 @@ h1.no-filters-enabled {
 
   header img {
     display: inline-block;
+  }
+  .copy-container {
+    margin-bottom: 3em;
+    flex-grow: 1;
   }
 }
 
