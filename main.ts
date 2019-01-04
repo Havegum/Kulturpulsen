@@ -1,5 +1,4 @@
 /// <reference types="@types/googlemaps" />
-
 const DAYS:Array<string> = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
 const TODAY:Date = new Date();
 
@@ -96,15 +95,15 @@ class FilterModule {
 class FilterToggle {
   public checked:boolean;
 
-  private target:string;
+  private target: string;
   private container: HTMLElement;
-  private color:string;
-  private name:string;
-  private background?:HTMLSpanElement;
+  private color: string;
+  private name: string;
+  private background?: HTMLSpanElement;
   private events: CultureEvent[];
   private alertParent: Function;
 
-  constructor(events: CultureEvent[], target:string, color:string, alertParent: Function) {
+  constructor(events: CultureEvent[], target: string, color: string, alertParent: Function) {
     this.events = events;
     this.name = target;
     this.target = target.replace(/\s/g, '-');
@@ -115,7 +114,7 @@ class FilterToggle {
     this.checked = false;
   }
 
-  draw():HTMLElement {
+  draw(): HTMLElement {
     let cont = this.container;
 
     let label = document.createElement('label');
@@ -144,11 +143,11 @@ class FilterToggle {
     return cont;
   }
 
-  toggle(): (evt:any) => void {
+  toggle(): (evt: any) => void {
     // closure ensures the scope is correct
     let self = this;
 
-    return function(evt:any) {
+    return function(evt: any) {
       if (self.background) {
         // toggle switches the value of checked
         self.checked = !self.checked;
@@ -158,7 +157,6 @@ class FilterToggle {
 
         // then filters list items and map markers
         self.events.filter(evt => evt.category == self.name)
-              // .filter(evt => evt.hasMarker)
               .forEach(evt => evt.setDisplay(self.checked));
 
         // alert parent
@@ -236,11 +234,10 @@ class CultureEvent {
       this.start = new Date(TODAY.getTime() +
         (day - currentDay + (dayHasPassed ? 7 : 0)) * 24*60*60*1000);
 
-    // if neither, print error
     } else {
+      // if neither, print error
       this.start = new Date(0);
       console.error(`Arrangementet "${title.trim()}" mangler dato eller ukedag.`)
-
     }
 
     this.start_time = start_time;
@@ -331,7 +328,7 @@ class CultureEvent {
 
     location.href = '#_';
     location.classList.add('location-anchor')
-      let place:Place | undefined = this.place;
+    let place:Place | undefined = this.place;
 
       location.onclick = function () {
         if(place && place.infowindow && marker) {
@@ -345,7 +342,12 @@ class CultureEvent {
     }
 
     location.classList.add('event_details-location');
-    location.textContent = this.location;
+
+    if(place && place.navn) {
+      location.textContent = place.navn;
+    } else {
+      location.textContent = this.location;
+    }
 
     details.appendChild(time);
     details.appendChild(location);
@@ -367,7 +369,6 @@ class CultureEvent {
     this.isVisible = visibility;
   }
 }
-
 
 window.onload = function() {
   let list = document.getElementById('list');
@@ -392,7 +393,6 @@ window.onload = function() {
     }
 
       /* LETS GET EVENTS UP AND RUNNING
-
         The following block does this:
           for each row:
             filter rows with empty title
@@ -407,12 +407,10 @@ window.onload = function() {
             .filter(evt => evt.repeating || evt.start && evt.start.valueOf() > TODAY.valueOf())
             .sort((a, b) => Math.sign(a.start.valueOf() - b.start.valueOf()));
 
-
+      // TODO: show only first 40? load more on btn press or scroll?
       events.forEach(evt => evt.draw(list));
 
-
     /* OKAY WE'RE GOOD, TIME FOR META STUFF */
-
     Object.keys(meta.steder).forEach(loc => {
       let location = meta.steder[loc];
 
@@ -421,15 +419,13 @@ window.onload = function() {
         `<div  class="infowindow">\
           <h4>${location.navn}</h4>\
           <br>\
-          <p>
             ${(<CultureEvent[]> events)
               .filter(e => e.location.toLowerCase() == location.navn.toLowerCase())
               .map(e =>
                 `<a href="#" onmousedown="jumpTo('${e.title.trim().replace(/\s/g, '-')}')">\
                 <div class="infowindow-point" style="background-color:${e.color}"></div>\
                 ${e.title}</a>`)
-              .join('<br>')}\
-          </p>
+              .join('')}\
         </div>`,
         position: {lat:location.lat, lng:location.lng}
       });
@@ -439,11 +435,13 @@ window.onload = function() {
     let filterModule: FilterModule = new FilterModule(meta.kategorier, events);
     filterModule.draw(<HTMLElement> document.getElementById('filter'));
 
-
     title.textContent = "Kommende arrangementer";
     title.classList.remove('loading');
   })
-  .catch(() => title.textContent = 'Kunne ikke laste innhold');
+  .catch((e) => {
+    console.error(e);
+    title.textContent = 'Kunne ikke laste innhold';
+  });
 
   // initialize map
   initMap();
@@ -507,10 +505,7 @@ function jumpTo(evt_id: string) {
   if(target) {
     document.location.hash = evt_id;
     window.scrollTo(0,0);
-
     target.scrollIntoView({ behavior:'smooth', block:'center' });
-    // TODO: Breaks in safari, add polyfill?
-    // window.scrollTo({top:target.scrollTop, left:0, behavior:'smooth'})
   }
   return target;
 }
