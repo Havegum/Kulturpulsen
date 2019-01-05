@@ -422,9 +422,10 @@ window.onload = function() {
             ${(<CultureEvent[]> events)
               .filter(e => e.location.toLowerCase() == location.navn.toLowerCase())
               .map(e =>
-                `<a href="#" onmousedown="jumpTo('${e.title.trim().replace(/\s/g, '-')}')">\
-                <div class="infowindow-point" style="background-color:${e.color}"></div>\
-                ${e.title}</a>`)
+                `<a\
+                onclick="jumpTo('${e.title.trim().replace(/\s/g, '-')}')"
+                ><div class="infowindow-point" style="background-color:${e.color}"></div
+                >${e.title}</a>`)
               .join('')}\
         </div>`,
         position: {lat:location.lat, lng:location.lng}
@@ -501,11 +502,12 @@ function toPlaceList(input: string[][]): PlaceList {
 }
 
 function jumpTo(evt_id: string) {
+  document.location.hash = evt_id;
   let target = document.getElementById(evt_id);
   if(target) {
-    document.location.hash = evt_id;
     window.scrollTo(0,0);
     target.scrollIntoView({ behavior:'smooth', block:'center' });
+    // scrollintoview breaks for anything not firefox or chrome
   }
   return target;
 }

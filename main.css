@@ -352,6 +352,7 @@ h1.no-filters-enabled {
 
 .location-anchor,
 .infowindow a {
+  cursor: pointer;
   color: inherit;
   text-decoration: none;
 }
