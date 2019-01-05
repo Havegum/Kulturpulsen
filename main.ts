@@ -2,6 +2,11 @@
 const DAYS:Array<string> = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
 const TODAY:Date = new Date();
 
+// TODO: Legend for hype
+// TODO: Sort by hype
+// TODO: Sorter by ukedag
+// TODO: can't find high DPR?
+
 let filtered:Array<string> = [];
 let map:google.maps.Map;
 let global_infowindow:google.maps.InfoWindow | undefined;
@@ -326,9 +331,11 @@ class CultureEvent {
     let marker = this.marker;
     let location = document.createElement('a');
 
-    location.href = '#_';
     location.classList.add('location-anchor')
     let place:Place | undefined = this.place;
+    location.href = '#_';
+    // TODO:
+    // This breaks for events without a set location
 
       location.onclick = function () {
         if(place && place.infowindow && marker) {
