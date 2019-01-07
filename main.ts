@@ -5,7 +5,7 @@ const TODAY:Date = new Date();
 // TODO: Legend for hype
 // TODO: Sort by hype
 // TODO: Sorter by ukedag
-// TODO: can't find high DPR?
+// TODO: can't find high DPR? => breaks in chrome for android
 
 let filtered:Array<string> = [];
 let map:google.maps.Map;
