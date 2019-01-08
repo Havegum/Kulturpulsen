@@ -362,6 +362,11 @@ h1.no-filters-enabled {
   text-decoration: underline;
 }
 
+.dead-link:hover {
+  text-decoration: none !important;
+  cursor: default;
+}
+
 .filter {
   z-index: 2;
   position: sticky;

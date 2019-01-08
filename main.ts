@@ -193,6 +193,7 @@ class CultureEvent {
 
   private container: HTMLLIElement;
   private marker?:google.maps.Marker;
+  private isDrawn: boolean = false;
 
 
   constructor(
@@ -281,6 +282,8 @@ class CultureEvent {
   }
 
   draw(node?: HTMLElement | null) {
+    if(this.isDrawn && node) return node.appendChild(this.container);
+
     // If meta has latlng information, draw the marker there.
     if(!!this.place) {
       this.drawGoogleMarker();
@@ -333,9 +336,6 @@ class CultureEvent {
 
     location.classList.add('location-anchor')
     let place:Place | undefined = this.place;
-    location.href = '#_';
-    // TODO:
-    // This breaks for events without a set location
 
       location.onclick = function () {
         if(place && place.infowindow && marker) {
@@ -345,14 +345,17 @@ class CultureEvent {
 
         global_infowindow = place.infowindow;
         global_infowindow.open(map, marker);
+        map.setCenter(global_infowindow.getPosition());
       }
     }
 
     location.classList.add('event_details-location');
 
     if(place && place.navn) {
+      location.href = '#_';
       location.textContent = place.navn;
     } else {
+      location.classList.add('dead-link')
       location.textContent = this.location;
     }
 
@@ -368,6 +371,7 @@ class CultureEvent {
     }
 
     if (node) { node.appendChild(li); }
+    this.isDrawn = true;
   }
 
   setDisplay(visibility:boolean):void {
@@ -378,7 +382,7 @@ class CultureEvent {
 }
 
 window.onload = function() {
-  let list = document.getElementById('list');
+  let list = <HTMLElement> document.getElementById('list');
   let title = <HTMLElement> document.getElementById('title');
 
   let parse = parseCSV('\t');
@@ -408,16 +412,35 @@ window.onload = function() {
             sort by date
             draw
       */
-      let events = events_csv
-            .filter(rows => !!rows[0].trim())
-            .map(rows => new CultureEvent(meta, ...rows))
-            .filter(evt => evt.repeating || evt.start && evt.start.valueOf() > TODAY.valueOf())
-            .sort((a, b) => Math.sign(a.start.valueOf() - b.start.valueOf()));
+    let events = events_csv
+          .filter(rows => !!rows[0].trim())
+          .map(rows => new CultureEvent(meta, ...rows))
+          .filter(evt => evt.repeating || evt.start && evt.start.valueOf() > TODAY.valueOf())
+          .sort((a, b) => Math.sign(a.start.valueOf() - b.start.valueOf()));
 
-      // TODO: show only first 40? load more on btn press or scroll?
-      events.forEach(evt => evt.draw(list));
+    // TODO: show only first 40? load more on btn press or scroll?
+    events.forEach(evt => evt.draw(list));
 
-    /* OKAY WE'RE GOOD, TIME FOR META STUFF */
+    let copyHead = document.getElementById('copy-header');
+    if(copyHead) {
+      let sortByHypeBtn = document.createElement('button');
+      sortByHypeBtn.textContent = 'Sorter etter hype';
+
+      sortByHypeBtn.addEventListener('click', function sortByHype(e) {
+        while(list.firstChild) {
+          list.removeChild(list.firstChild);
+        }
+        events.sort((a, b) => Math.sign(b.hype - a.hype));
+        events.forEach(evt => evt.draw(list));
+
+        sortByHypeBtn.textContent = 'Sorter etter dato';
+        // TODO: sort by date (lol)
+      });
+
+      copyHead.appendChild(sortByHypeBtn);
+    }
+
+    /* OKAY WE'RE GOOD, TIME FOR INFOWINDOWS */
     Object.keys(meta.steder).forEach(loc => {
       let location = meta.steder[loc];
 
