@@ -3,9 +3,7 @@ const DAYS:Array<string> = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 
 const TODAY:Date = new Date();
 
 // TODO: Legend for hype
-// TODO: Sort by hype
 // TODO: Sorter by ukedag
-// TODO: can't find high DPR? => breaks in chrome for android
 
 let filtered:Array<string> = [];
 let map:google.maps.Map;
@@ -32,21 +30,25 @@ interface Meta {
 }
 
 class FilterModule {
-  // TODO: Filter repeating events pls
   private container: HTMLDivElement;
   private categories: object;
   private togglerList: FilterToggle[];
   private events: CultureEvent[];
-  private evts_container: HTMLElement | null;
-  private evts_title: HTMLElement | null;
+  private evts_container: HTMLElement;
+  private evts_header: HTMLElement;
 
-  constructor(categories:object, events: CultureEvent[]) {
+  constructor (
+    categories:object,
+    events: CultureEvent[],
+    evts_container:HTMLElement,
+    evts_header:HTMLElement
+  ) {
     this.container = document.createElement('div');
     this.categories = categories;
     this.togglerList = [];
     this.events = events;
-    this.evts_container = document.getElementById('list');
-    this.evts_title = document.getElementById('title');
+    this.evts_container = evts_container;
+    this.evts_header = evts_header;
   }
 
   draw(parent: HTMLElement): void {
@@ -54,7 +56,6 @@ class FilterModule {
     let categories = this.categories;
     let checkAllEmpty = this.checkAllEmpty;
     let togglerList = this.togglerList;
-
 
     // for each category to filter by, create a
     // filtertoggle with the appropriate color
@@ -72,26 +73,25 @@ class FilterModule {
   }
 
   checkAllEmpty(toggler: FilterToggle) {
-    if(!this.evts_container || !this.evts_title) return;
-    let container = <HTMLDivElement> this.evts_container;
-    let title = <HTMLHeadingElement> this.evts_title;
+    let container = this.evts_container;
+    let evts_header = this.evts_header;
 
     if (!this.events.reduce((a:boolean, b) =>  a || b.isVisible, false)) {
       // 2: if not all filters are off, but no results: display cute sheep looking for things
       container.classList.add('no-events-found');
-      title.classList.add('no-events-found');
+      evts_header.classList.add('no-events-found');
     } else {
       container.classList.remove('no-events-found');
-      title.classList.remove('no-events-found');
+      evts_header.classList.remove('no-events-found');
     }
 
     if(!this.togglerList.reduce((a:boolean, b) => a || b.checked, false)) {
       // 1: if all filters are off, display cute bear struggling with controls
       container.classList.add('no-filters-enabled');
-      title.classList.add('no-filters-enabled');
+      evts_header.classList.add('no-filters-enabled');
     } else {
       container.classList.remove('no-filters-enabled');
-      title.classList.remove('no-filters-enabled');
+      evts_header.classList.remove('no-filters-enabled');
     }
   }
 
@@ -190,9 +190,10 @@ class CultureEvent {
   private place?: Place;
   private start_time: string;
   private end_time: string;
+  private infowindowElement?: HTMLElement;
 
-  private container: HTMLLIElement;
   private marker?:google.maps.Marker;
+  private container: HTMLLIElement;
   private isDrawn: boolean = false;
 
 
@@ -374,16 +375,52 @@ class CultureEvent {
     this.isDrawn = true;
   }
 
+  createInfowindowElement():HTMLElement {
+    if(this.infowindowElement) return this.infowindowElement;
+
+    let a = document.createElement('a');
+    a.setAttribute('onclick', 'jumpTo("' + this.title.trim().replace(/\s/g, '-') + '");');
+
+    let point = document.createElement('div');
+    point.classList.add('infowindow-point');
+    point.style.backgroundColor = this.color;
+
+    let txt = document.createElement('p');
+    txt.textContent = this.title;
+
+    a.appendChild(point);
+    a.appendChild(txt)
+    this.infowindowElement = a;
+    return a;
+  }
+
   setDisplay(visibility:boolean):void {
     this.container.classList.toggle('event_hidden', !visibility);
     if(this.marker) this.marker.setMap(visibility ? map : null);
+    if(this.infowindowElement) this.infowindowElement.style.display = visibility ? '' : 'none';
     this.isVisible = visibility;
   }
 }
 
 window.onload = function() {
-  let list = <HTMLElement> document.getElementById('list');
-  let title = <HTMLElement> document.getElementById('title');
+  let listOrNull = document.getElementById('list');
+  if(listOrNull === null) throw new Error('HTML error! #list not found');
+  let list = <HTMLElement> listOrNull;
+
+  let titleOrNull = document.getElementById('title');
+  if(listOrNull === null) throw new Error('HTML error! #title not found');
+  let title = <HTMLElement> titleOrNull;
+
+  let copyHeadOrNull = document.getElementById('copy-header');
+  if(copyHeadOrNull === null) throw new Error('HTML error! #copy-header not found');
+  let copyHead = document.createElement('div');
+  copyHead.classList.add('copy-head-content');
+  (<HTMLElement> copyHeadOrNull).appendChild(copyHead);
+
+  //
+  // Look, I know this null error handling and shit makes
+  // for reaaally tight coupling with the html-element ...
+  //
 
   let parse = parseCSV('\t');
 
@@ -418,52 +455,87 @@ window.onload = function() {
           .filter(evt => evt.repeating || evt.start && evt.start.valueOf() > TODAY.valueOf())
           .sort((a, b) => Math.sign(a.start.valueOf() - b.start.valueOf()));
 
-    // TODO: show only first 40? load more on btn press or scroll?
+    // IDEA: show only first 40? load more on btn press or scroll?
     events.forEach(evt => evt.draw(list));
-
-    let copyHead = document.getElementById('copy-header');
-    if(copyHead) {
-      let sortByHypeBtn = document.createElement('button');
-      sortByHypeBtn.textContent = 'Sorter etter hype';
-
-      sortByHypeBtn.addEventListener('click', function sortByHype(e) {
-        while(list.firstChild) {
-          list.removeChild(list.firstChild);
-        }
-        events.sort((a, b) => Math.sign(b.hype - a.hype));
-        events.forEach(evt => evt.draw(list));
-
-        sortByHypeBtn.textContent = 'Sorter etter dato';
-        // TODO: sort by date (lol)
-      });
-
-      copyHead.appendChild(sortByHypeBtn);
-    }
 
     /* OKAY WE'RE GOOD, TIME FOR INFOWINDOWS */
     Object.keys(meta.steder).forEach(loc => {
       let location = meta.steder[loc];
 
+      let div = document.createElement('div');
+      div.classList.add('infowindow');
+
+      let infowindow_title = document.createElement('h4');
+      infowindow_title.textContent = location.navn;
+      div.appendChild(infowindow_title);
+
+      events
+        .filter(e => e.location.toLowerCase() == loc)
+        .map(e => e.createInfowindowElement())
+        .forEach(infoWindow => div.appendChild(infoWindow));
+
       location.infowindow = new google.maps.InfoWindow({
-        content:
-        `<div  class="infowindow">\
-          <h4>${location.navn}</h4>\
-          <br>\
-            ${(<CultureEvent[]> events)
-              .filter(e => e.location.toLowerCase() == location.navn.toLowerCase())
-              .map(e =>
-                `<a\
-                onclick="jumpTo('${e.title.trim().replace(/\s/g, '-')}')"
-                ><div class="infowindow-point" style="background-color:${e.color}"></div
-                >${e.title}</a>`)
-              .join('')}\
-        </div>`,
+        content:div,
         position: {lat:location.lat, lng:location.lng}
       });
     });
 
+    // OKAY so far so good, time to do the header
+    // Heres the button thing that sort events by date or hype!
+    let sortBtn = document.createElement('button');
+    let sortByHype = true;
+    sortBtn.textContent = 'Sorter etter hype';
+    sortBtn.classList.add('sort-by-hype');
+
+    sortBtn.addEventListener('click', () => {
+      while(list.firstChild) {
+        list.removeChild(list.firstChild);
+      }
+
+      if(sortByHype) {
+        events.sort((a, b) => Math.sign(b.hype - a.hype));
+        sortBtn.textContent = 'Sorter etter dato';
+        sortBtn.classList.add('sort-by-date');
+        sortBtn.classList.remove('sort-by-hype');
+
+      } else {
+        events.sort((a, b) => Math.sign(a.start.valueOf() - b.start.valueOf()));
+        sortBtn.textContent = 'Sorter etter hype';
+        sortBtn.classList.add('sort-by-hype');
+        sortBtn.classList.remove('sort-by-date');
+      }
+
+      sortByHype = !sortByHype;
+      events.forEach(evt => evt.draw(list));
+    });
+    copyHead.appendChild(sortBtn);
+
+    // HYPE Legend
+    let hypeLegend = document.createElement('div');
+    hypeLegend.classList.add('hype-legend');
+
+    let liteHype = document.createElement('p');
+    liteHype.textContent = 'Lite hype —'
+    hypeLegend.appendChild(liteHype);
+
+    for (let i = 1; i < 6; i++) {
+      let e = document.createElement('div');
+      e.classList.add('event_sidebar-point');
+      let scale = (i * 0.2) + 0.4;
+      e.style.transform = 'scale3d('+scale+','+scale+',1)';
+      e.style.margin = '0 0.' + i + 'em';
+      hypeLegend.appendChild(e);
+    }
+
+    let myeHype = document.createElement('p');
+    myeHype.textContent = '— Mye hype'
+    hypeLegend.appendChild(myeHype);
+
+    copyHead.appendChild(hypeLegend);
+
+
     // initialize filter module
-    let filterModule: FilterModule = new FilterModule(meta.kategorier, events);
+    let filterModule: FilterModule = new FilterModule(meta.kategorier, events, <HTMLElement> document.getElementById('list'), <HTMLElement> copyHead);
     filterModule.draw(<HTMLElement> document.getElementById('filter'));
 
     title.textContent = "Kommende arrangementer";
@@ -537,6 +609,7 @@ function jumpTo(evt_id: string) {
   if(target) {
     window.scrollTo(0,0);
     target.scrollIntoView({ behavior:'smooth', block:'center' });
+    // TODO: Fix
     // scrollintoview breaks for anything not firefox or chrome
   }
   return target;
