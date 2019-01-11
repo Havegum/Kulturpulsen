@@ -1,8 +1,11 @@
 /// <reference types="@types/googlemaps" />
 const DAYS:Array<string> = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
 const TODAY:Date = new Date();
+let FIRE_ICONS:Promise<any>[] = [1,2,3,4,5,6].map(n =>
+  getURL('./img/fire_'+n+'.svg', {responseType:'XML', overrideMimeType:'image/svg+xml'}).then(response => response.documentElement));
 
-// TODO: Legend for hype
+
+
 // TODO: Sorter by ukedag
 
 let filtered:Array<string> = [];
@@ -282,7 +285,7 @@ class CultureEvent {
     });
   }
 
-  draw(node?: HTMLElement | null) {
+draw(node?: HTMLElement | null) {
     if(this.isDrawn && node) return node.appendChild(this.container);
 
     // If meta has latlng information, draw the marker there.
@@ -300,11 +303,35 @@ class CultureEvent {
     let sidebar = document.createElement('div');
     sidebar.classList.add('event_sidebar');
 
+
+    // // INLINE SVG EMBEDDING
+    // let sb_point = document.createElement('div');
+    // sb_point.style.fill = this.color;
+    // let iconNum:number = Math.max(Math.min(this.hype - 1, 5), 0);
+    //
+    // if(iconNum === 5) {
+    //   sb_point.style.position = 'relative';
+    //   sb_point.style.bottom = '.85em';
+    //   sb_point.style.transform = 'scale3d(.85, .85, 1)';
+    // }
+    //
+    // (async function () {
+    //   let svg = await FIRE_ICONS[iconNum];
+    //   sb_point.appendChild(svg.cloneNode(true));
+    // })();
+
     let sb_point = document.createElement('div');
     sb_point.classList.add('event_sidebar-point');
     let scale = (this.hype * 0.2) + 0.4;
     sb_point.style.transform = 'scale3d('+scale+','+scale+',1)';
     sb_point.style.backgroundColor = this.color;
+
+    // // OBJECT SVG
+    // let sb_point = document.createElement('object');
+    // sb_point.data = './img/fire_'+this.hype+'.svg';
+    // sb_point.type = 'image/svg+xml';
+    // sb_point.style.width = '1.5em'
+    // sb_point.style.height = '1.5em'
 
     let sb_repeat = document.createElement('div');
     sb_repeat.classList.add('event_sidebar-repeating-points')
@@ -512,10 +539,10 @@ window.onload = function() {
 
     // HYPE Legend
     let hypeLegend = document.createElement('div');
-    hypeLegend.classList.add('hype-legend');
+    hypeLegend.classList.add('hype-legend', 'noselect');
 
     let liteHype = document.createElement('p');
-    liteHype.textContent = 'Lite hype —'
+    liteHype.textContent = 'lite hype —'
     hypeLegend.appendChild(liteHype);
 
     for (let i = 1; i < 6; i++) {
@@ -528,14 +555,19 @@ window.onload = function() {
     }
 
     let myeHype = document.createElement('p');
-    myeHype.textContent = '— Mye hype'
+    myeHype.textContent = '— mye hype'
     hypeLegend.appendChild(myeHype);
 
     copyHead.appendChild(hypeLegend);
 
-
     // initialize filter module
-    let filterModule: FilterModule = new FilterModule(meta.kategorier, events, <HTMLElement> document.getElementById('list'), <HTMLElement> copyHead);
+    let filterModule: FilterModule = new FilterModule(
+      meta.kategorier,
+      events,
+      <HTMLElement> document.getElementById('list'),
+      <HTMLElement> document.getElementById('copy-header')
+    );
+
     filterModule.draw(<HTMLElement> document.getElementById('filter'));
 
     title.textContent = "Kommende arrangementer";
@@ -551,13 +583,18 @@ window.onload = function() {
 }
 
 
-function getURL(url: string): Promise<any> {
+function getURL(url: string, options?:any): Promise<any> {
   return new Promise(function(resolve, reject) {
     let xhr = new XMLHttpRequest();
     xhr.open('GET', url);
+    if(options) {
+      if(options.overrideMimeType) xhr.overrideMimeType(options.overrideMimeType);
+    }
     xhr.onreadystatechange = function() {
       if (xhr.readyState == 4) {
         if (xhr.status == 200) {
+          if(options && options.responseType === 'XML') resolve(xhr.responseXML);
+
           resolve(xhr.responseText);
         } else {
           reject(xhr.status + ' ' + xhr.statusText);

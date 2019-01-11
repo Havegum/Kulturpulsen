@@ -171,6 +171,8 @@ button {
   padding: .4em 1em;
   border-radius: .4em;
   border: none;
+
+  box-shadow: 0 2px 10px #0002;
 }
 
 button:hover {
@@ -449,6 +451,7 @@ button:hover {
 
 .filter {
   z-index: 2;
+  position: -webkit-sticky;
   position: sticky;
   top: 2.8em;
   padding: 1em;
@@ -566,8 +569,7 @@ button:hover {
   }
 }
 
-label {
-  cursor: pointer;
+label, .noselect {
   -webkit-touch-callout: none; /* iOS Safari */
     -webkit-user-select: none; /* Safari */
      -khtml-user-select: none; /* Konqueror HTML */
@@ -576,6 +578,11 @@ label {
             user-select: none; /* Non-prefixed version, currently
                                 supported by Chrome and Opera */
 }
+
+label {
+  cursor: pointer;
+}
+
 /* The switch - the box around the slider */
 .switch {
  position: relative;
