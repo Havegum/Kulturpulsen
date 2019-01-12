@@ -1,13 +1,11 @@
 /// <reference types="@types/googlemaps" />
 const DAYS:Array<string> = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
 const TODAY:Date = new Date();
-let FIRE_ICONS:Promise<any>[] = [1,2,3,4,5,6].map(n =>
-  getURL('./img/fire_'+n+'.svg', {responseType:'XML', overrideMimeType:'image/svg+xml'}).then(response => response.documentElement));
 
-
+// let FIRE_ICONS:Promise<any>[] = [1,2,3,4,5,6].map(n =>
+  // getURL('./img/fire_'+n+'.svg', {responseType:'XML', overrideMimeType:'image/svg+xml'}).then(response => response.documentElement));
 
 // TODO: Sorter by ukedag
-
 let filtered:Array<string> = [];
 let map:google.maps.Map;
 let global_infowindow:google.maps.InfoWindow | undefined;
