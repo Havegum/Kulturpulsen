@@ -634,12 +634,18 @@ window.onload = function() {
     let filterElem = <HTMLElement> document.getElementById('filter');
     filterModule.draw(filterElem);
 
-    let hideFilterBtn = <HTMLElement> document.getElementById('hide-filter');
     let hiddenFilter = false;
+    let hideFilterBtn = <HTMLElement> document.getElementById('hide-filter');
     hideFilterBtn.addEventListener('click', function () {
-      filterElem.classList[hiddenFilter ? 'remove' : 'add']('filter-hidden');
-      hideFilterBtn.firstElementChild!.textContent = hiddenFilter ? 'Skjul' : 'Filter';
       hiddenFilter = !hiddenFilter;
+      if(hiddenFilter) {
+        filterElem.classList.add('filter-hidden', 'filter-hide-children');
+        hideFilterBtn.firstElementChild!.textContent = 'Filter';
+      } else {
+        filterElem.classList.remove('filter-hidden');
+        setTimeout(() => hiddenFilter ? null: filterElem.classList.remove('filter-hide-children'), 200)
+        hideFilterBtn.firstElementChild!.textContent = 'Skjul';
+      }
     })
 
     title.textContent = "Kommende arrangementer";

@@ -297,7 +297,7 @@ button:hover {
 }
 
 .event {
-  padding: 0.5em .5em 1em 3em;
+  padding: 0.5em .5em 1em;
   min-height: 3em;
   border-radius: 8px;
 
@@ -319,6 +319,7 @@ button:hover {
 .event p a {
   color: grey;
   color: var(--grey);
+  position: relative;
 }
 .event p a:hover {
   color: blue;
@@ -539,14 +540,15 @@ button:hover {
 }
 
 .filter.filter-hidden {
-  /* visibility: hidden; */
   font-size: 0;
 }
-
-.filter-hidden * {
-  visibility: hidden;
+.filter * {
+  transition: opacity 200ms;
 }
-
+.filter-hide-children * {
+  visibility: hidden;
+  opacity: 0;
+}
 
 .filter > h2, .display-none {
   display:none;
@@ -554,8 +556,8 @@ button:hover {
 
 .filter > .control {
   -webkit-flex: 2;
-  -ms-flex: 2;
-  flex: 2;
+      -ms-flex: 2;
+          flex: 2;
 
   -webkit-justify-content: space-between;
      -moz-justify-content: space-between;
