@@ -1,6 +1,7 @@
 /// <reference types="@types/googlemaps" />
 const DAYS:Array<string> = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
 const TODAY:Date = new Date();
+const DATEBOUNDARY: Date = getDateBoundary(TODAY);
 
 // let FIRE_ICONS:Promise<any>[] = [1,2,3,4,5,6].map(n =>
   // getURL('./img/fire_'+n+'.svg', {responseType:'XML', overrideMimeType:'image/svg+xml'}).then(response => response.documentElement));
@@ -11,7 +12,7 @@ let map:google.maps.Map;
 let global_infowindow:google.maps.InfoWindow | undefined;
 
 interface Place {
-    navn:string;
+    navn: string;
     lat: number;
     lng: number;
     infowindow?: google.maps.InfoWindow;
@@ -26,8 +27,13 @@ interface CategoryList {
 }
 
 interface Meta {
-    steder: PlaceList;
-    kategorier: CategoryList;
+  steder: PlaceList;
+  kategorier: CategoryList;
+}
+
+interface ListElement {
+  start: Date;
+  getBody: () => HTMLElement;
 }
 
 class FilterModule {
@@ -73,7 +79,7 @@ class FilterModule {
     parent.classList.remove('display-none');
   }
 
-  checkAllEmpty(toggler: FilterToggle) {
+  checkAllEmpty(/*toggler: FilterToggle*/) {
     let container = this.evts_container;
     let evts_header = this.evts_header;
 
@@ -227,7 +233,6 @@ class CultureEvent {
     if(start_date.match(/\d\d\.\d\d\.\d{4}/)) {
       let d:number[] = start_date.trim().split('.').map(n => +n);
       this.start = new Date(d[2], d[1]-1, d[0]);
-
     // if string is a day of the week
     } else if(DAYS.indexOf(start_date) > -1) {
       let day:number = DAYS.indexOf(start_date);
@@ -246,6 +251,14 @@ class CultureEvent {
       // if neither, print error
       this.start = new Date(0);
       console.error(`Arrangementet "${title.trim()}" mangler dato eller ukedag.`)
+    }
+
+    if(start_time) {
+      this.start.setHours(+start_time.split(':')[0]);
+      this.start.setMinutes(+start_time.split(':')[1]);
+    } else {
+      this.start.setHours(18);
+      this.start.setMinutes(0);
     }
 
     this.start_time = start_time;
@@ -283,8 +296,8 @@ class CultureEvent {
     });
   }
 
-draw(node?: HTMLElement | null) {
-    if(this.isDrawn && node) return node.appendChild(this.container);
+  getBody () {
+    if(this.isDrawn) return this.container;
 
     // If meta has latlng information, draw the marker there.
     if(!!this.place) {
@@ -396,8 +409,12 @@ draw(node?: HTMLElement | null) {
       content.appendChild(p);
     }
 
-    if (node) { node.appendChild(li); }
     this.isDrawn = true;
+    return li;
+  }
+
+  appendTo(el: HTMLElement) {
+    el.appendChild(this.container);
   }
 
   createInfowindowElement():HTMLElement {
@@ -419,11 +436,53 @@ draw(node?: HTMLElement | null) {
     return a;
   }
 
-  setDisplay(visibility:boolean):void {
+  setDisplay (visibility:boolean):void {
     this.container.classList.toggle('event_hidden', !visibility);
     if(this.marker) this.marker.setMap(visibility ? map : null);
     if(this.infowindowElement) this.infowindowElement.style.display = visibility ? '' : 'none';
     this.isVisible = visibility;
+  }
+}
+
+class ListSeperator {
+  public start: Date;
+
+  private label: string;
+  private body: HTMLLIElement;
+  private isDrawn: boolean;
+  private weekly: boolean;
+
+  constructor (
+    start: Date,
+    label?: string
+  ) {
+    start.setHours(0);
+    start.setMinutes(0);
+    this.start = new Date(start.valueOf() - 1);
+    if(label) {
+      this.label = label;
+      this.weekly = true;
+    } else {
+      this.label = start.toLocaleString('nb-NO', {month:'long'});
+      this.weekly = false;
+    }
+    this.body = document.createElement('li');
+    this.isDrawn = false;
+  }
+
+  getBody () {
+    if(this.isDrawn) return this.body;
+
+    this.body.classList.add('list-seperator', 'noselect');
+    if(this.weekly) this.body.classList.add('weekly');
+    this.body.textContent = this.label;
+
+    this.isDrawn = true;
+    return this.body;
+  }
+
+  appendTo (el:HTMLElement) {
+    el.appendChild(this.body);
   }
 }
 
@@ -441,11 +500,6 @@ window.onload = function() {
   let copyHead = document.createElement('div');
   copyHead.classList.add('copy-head-content');
   (<HTMLElement> copyHeadOrNull).appendChild(copyHead);
-
-  //
-  // Look, I know this null error handling and shit makes
-  // for reaaally tight coupling with the html-element ...
-  //
 
   let parse = parseCSV('\t');
 
@@ -477,11 +531,17 @@ window.onload = function() {
     let events = events_csv
           .filter(rows => !!rows[0].trim())
           .map(rows => new CultureEvent(meta, ...rows))
-          .filter(evt => evt.repeating || evt.start && evt.start.valueOf() > TODAY.valueOf())
-          .sort((a, b) => Math.sign(a.start.valueOf() - b.start.valueOf()));
+          .filter(evt => evt.repeating || evt.start && evt.start.valueOf() > TODAY.valueOf());
+
+    let seperators = getMonthSeparators(TODAY, DATEBOUNDARY).concat(getWeeks(TODAY, DATEBOUNDARY));
 
     // IDEA: show only first 40? load more on btn press or scroll?
-    events.forEach(evt => evt.draw(list));
+    (<ListElement[]> events)
+      .concat(seperators)
+      // .map(e => {console.log(e); return e})
+      .sort((a, b) => Math.sign(a.start.valueOf() - b.start.valueOf()))
+      .map(evt => evt.getBody())
+      .forEach(e => list.appendChild(e));
 
     /* OKAY WE'RE GOOD, TIME FOR INFOWINDOWS */
     Object.keys(meta.steder).forEach(loc => {
@@ -517,21 +577,26 @@ window.onload = function() {
         list.removeChild(list.firstChild);
       }
 
+      let toDraw:any[];
       if(sortByHype) {
-        events.sort((a, b) => Math.sign(b.hype - a.hype));
+        toDraw = events.sort((a, b) => Math.sign(b.hype - a.hype));
+
         sortBtn.textContent = 'Sorter etter dato';
         sortBtn.classList.add('sort-by-date');
         sortBtn.classList.remove('sort-by-hype');
 
       } else {
-        events.sort((a, b) => Math.sign(a.start.valueOf() - b.start.valueOf()));
+
+        toDraw = (<ListElement[]> events).concat(seperators)
+          .sort((a, b) => Math.sign(a.start.valueOf() - b.start.valueOf()));
+
         sortBtn.textContent = 'Sorter etter hype';
         sortBtn.classList.add('sort-by-hype');
         sortBtn.classList.remove('sort-by-date');
       }
 
       sortByHype = !sortByHype;
-      events.forEach(evt => evt.draw(list));
+      toDraw.map(evt => evt.getBody()).forEach(e => list.appendChild(e));
     });
     copyHead.appendChild(sortBtn);
 
@@ -566,7 +631,16 @@ window.onload = function() {
       <HTMLElement> document.getElementById('copy-header')
     );
 
-    filterModule.draw(<HTMLElement> document.getElementById('filter'));
+    let filterElem = <HTMLElement> document.getElementById('filter');
+    filterModule.draw(filterElem);
+
+    let hideFilterBtn = <HTMLElement> document.getElementById('hide-filter');
+    let hiddenFilter = false;
+    hideFilterBtn.addEventListener('click', function () {
+      filterElem.classList[hiddenFilter ? 'remove' : 'add']('filter-hidden');
+      hideFilterBtn.firstElementChild!.textContent = hiddenFilter ? 'Skjul' : 'Filter';
+      hiddenFilter = !hiddenFilter;
+    })
 
     title.textContent = "Kommende arrangementer";
     title.classList.remove('loading');
@@ -579,7 +653,6 @@ window.onload = function() {
   // initialize map
   initMap();
 }
-
 
 function getURL(url: string, options?:any): Promise<any> {
   return new Promise(function(resolve, reject) {
@@ -648,6 +721,61 @@ function jumpTo(evt_id: string) {
     // scrollintoview breaks for anything not firefox or chrome
   }
   return target;
+}
+
+function getDateBoundary(today:Date):Date {
+  let boundary = new Date('' + today.getFullYear());
+  if(today.getMonth() <= 6) {
+    boundary.setMonth(7);
+  } else {
+    boundary.setMonth(1);
+    boundary.setFullYear(boundary.getFullYear() + 1);
+  }
+  return boundary;
+}
+
+function getWeeks(current?:Date, goal?:Date):ListSeperator[] {
+  goal = goal || DATEBOUNDARY;
+  current = current || TODAY;
+  let dates: ListSeperator[] = [];
+  let weekNum = getWeekNumber(TODAY);
+
+  current.setDate(current.getDate() - current.getDay() + 1);
+
+  while (current.valueOf() < goal.valueOf()) {
+    dates.push(new ListSeperator(current, 'uke ' + weekNum));
+    weekNum += 1;
+    current = new Date(current.valueOf());
+    current.setDate(current.getDate() + 7);
+  }
+
+  return dates;
+}
+
+function getMonthSeparators(today:Date, boundry:Date):ListSeperator[] {
+  let year = today.getFullYear();
+  let month = today.getMonth() + 1;
+  let lastMonthWithinBound = new Date(year + '-' + leadingZero(month) + '-01');
+  let monthSeparators:any[] = [];
+
+  while(lastMonthWithinBound.valueOf() < boundry.valueOf()) {
+    lastMonthWithinBound = new Date((month == 12 ? year + 1 : year) + '-' + leadingZero(month++%12) + '-01');
+    monthSeparators.push(lastMonthWithinBound);
+  }
+
+  return monthSeparators.map(date => new ListSeperator(date));
+}
+
+function getWeekNumber (date:Date) {
+  let d:any = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  let dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  let yearStart:any = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1)/7)
+}
+
+function leadingZero(n:number):string {
+  return (n > 9 ? '' : '0') + n;
 }
 
 function initMap() {
