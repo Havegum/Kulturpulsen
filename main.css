@@ -171,7 +171,7 @@ button {
   cursor: pointer;
   font-size: 1em;
   font-family: inherit;
-  background-color: grey;
+  background-color: lightgrey;
   background-color: var(--lightgrey);
   padding: .4em 1em;
   border-radius: .4em;
@@ -197,9 +197,15 @@ button:hover {
 #copy-header .sort-by-date::before {
   background-image: url("./img/date.svg");
 }
+#copy-header .sort-by-date:hover::before {
+  background-image: url("./img/date_white.svg");
+}
 
-#copy-header .sort-by-hype::before {
+#copy-header .sort-by-fav::before {
   background-image: url("./img/hype.svg");
+}
+#copy-header .sort-by-fav:hover::before {
+  background-image: url("./img/hype_white.svg");
 }
 
 #copy-header.not-yet-loaded,
@@ -298,9 +304,10 @@ button:hover {
 
 .event {
   padding: 0.5em .5em 1em;
+  margin: -.3em 0 .3em;
+
   min-height: 3em;
   border-radius: 8px;
-
   -webkit-flex-direction: row;
   -ms-flex-direction: row;
   flex-direction: row;
@@ -309,6 +316,27 @@ button:hover {
   -webkit-transition: opacity .4s ease-in;
           transition: opacity .4s ease-in;
 }
+
+.event-title {
+  color: inherit;
+  text-decoration: none;
+}
+
+.event:hover .event-title {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}
+
+.event:hover .event-title.website,
+.event-title.website {
+  text-decoration: underline;
+  text-decoration-style: solid;
+}
+
+.event-title.website:hover {
+  text-decoration-color: currentcolor !important;
+}
+
 
 .event p {
   max-width: 30em;
@@ -358,10 +386,6 @@ button:hover {
 
   background-color: #eee;
   background-color: var(--dim-white);
-}
-
-.event:target h2 {
-  text-decoration: underline;
 }
 
 @-webkit-keyframes pulse {
@@ -428,6 +452,13 @@ button:hover {
           flex-shrink: 0;
 }
 
+.event_fave-point {
+  background-image: url('./img/fav.svg');
+  background-size: 0.75em;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
 .event_sidebar-repeating-points {
   background-image: url("./img/dot.svg");
   background-repeat: repeat-y;
@@ -484,6 +515,20 @@ button:hover {
   text-decoration-color: lightgrey;
   text-decoration-color: var(--lightgrey);
   text-decoration-style: dashed;
+}
+
+.infowindow > a {
+  font-size: 1.2em;
+  color: black;
+  color: var(--black);
+  text-decoration-color: darkgrey;
+  text-decoration-color: var(--darkgrey);
+}
+
+.infowindow > p {
+  color: darkgrey;
+  color: var(--darkgrey);
+  margin: -.2em 0 .8em;
 }
 
 .infowindow a,
@@ -585,6 +630,7 @@ button:hover {
 .hide-filter {
   z-index: -200;
   color: darkgrey;
+  color: var(--darkgrey);
   width: 4em;
   height:4em;
   border-radius: 0 0 100% 100%;
@@ -605,7 +651,6 @@ button:hover {
   color: white;
   bottom:-3em;
 }
-
 
 @media only screen and (min-width: 735px) {
   .filter-container {

@@ -15,6 +15,8 @@ interface Place {
     navn: string;
     lat: number;
     lng: number;
+    address?: string;
+    website?: string;
     infowindow?: google.maps.InfoWindow;
 }
 
@@ -195,6 +197,8 @@ class CultureEvent {
   public isVisible: boolean = true;
 
   private place?: Place;
+  private website: string;
+  private locale: string;
   private start_time: string;
   private end_time: string;
   private infowindowElement?: HTMLElement;
@@ -208,6 +212,7 @@ class CultureEvent {
     meta:Meta,
     title = '',
     location = '',
+    locale = '',
     start_date = '',
     start_time = '',
     end_date = '',
@@ -215,15 +220,18 @@ class CultureEvent {
     category = '',
     hype = '',
     description = '',
+    website = '',
     repeating = ''
   ) {
     this.title = title;
+    this.website = website;
     this.location = location;
+    this.locale = locale;
     this.hasMarker = false;
 
     this.category = category;
     this.description = description;
-    this.hype = +(hype || 0);
+    this.hype = +(hype || 1);
 
     this.container = document.createElement('li');
 
@@ -279,7 +287,7 @@ class CultureEvent {
         strokeWeight: 15,
         fillColor: this.color,
         fillOpacity: .8,
-        scale: 5 + (this.hype * this.hype / 4)
+        scale: 5 + (this.hype * this.hype / 2)
       }
     });
 
@@ -308,8 +316,14 @@ class CultureEvent {
 
     let li = this.container;
     li.classList.add('event');
-    li.id = this.title.trim().replace(/\s/g, '-');
+    let id = this.title.trim().replace(/\s/g, '-');
+    li.id = id;
 
+    li.addEventListener('click', () => {
+      let currentScrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+      document.location.hash = '#' + id;
+      window.scrollTo({left:0, top:currentScrollTop});
+    }, true);
 
     let sidebar = document.createElement('div');
     sidebar.classList.add('event_sidebar');
@@ -333,7 +347,15 @@ class CultureEvent {
 
     let sb_point = document.createElement('div');
     sb_point.classList.add('event_sidebar-point');
-    let scale = (this.hype * 0.2) + 0.4;
+    let scale = 0.9;
+
+    if(this.hype >= 3) {
+      scale = 1.7;
+      sb_point.classList.add('event_fave-point');
+    } else if(this.hype == 2) {
+      scale = 1.4;
+    }
+
     sb_point.style.transform = 'scale3d('+scale+','+scale+',1)';
     sb_point.style.backgroundColor = this.color;
 
@@ -354,9 +376,20 @@ class CultureEvent {
     let content = document.createElement('div');
     sb_repeat.classList.add('event_content');
 
+    let title_link = document.createElement('a');
+    title_link.classList.add('event-title');
     let title = document.createElement('h2');
     title.textContent = this.title;
-    content.appendChild(title);
+    title_link.setAttribute('style', 'text-decoration-color:' + this.color);
+
+    if(this.website) {
+      title_link.href = this.website;
+      title_link.target = '_blank';
+      title_link.classList.add('website');
+    }
+
+    title_link.appendChild(title);
+    content.appendChild(title_link);
 
     let details = document.createElement('div');
     details.classList.add('event_details');
@@ -392,7 +425,7 @@ class CultureEvent {
 
     if(place && place.navn) {
       location.href = '#_';
-      location.textContent = place.navn;
+      location.textContent = place.navn + (this.locale ? ' – ' + this.locale : '');
     } else {
       location.classList.add('dead-link')
       location.textContent = this.location;
@@ -419,6 +452,7 @@ class CultureEvent {
 
   createInfowindowElement():HTMLElement {
     if(this.infowindowElement) return this.infowindowElement;
+    let ul = document.createElement('li');
 
     let a = document.createElement('a');
     a.setAttribute('onclick', 'jumpTo("' + this.title.trim().replace(/\s/g, '-') + '");');
@@ -432,8 +466,10 @@ class CultureEvent {
 
     a.appendChild(point);
     a.appendChild(txt)
-    this.infowindowElement = a;
-    return a;
+    ul.appendChild(a);
+
+    this.infowindowElement = ul;
+    return ul;
   }
 
   setDisplay (visibility:boolean):void {
@@ -550,14 +586,27 @@ window.onload = function() {
       let div = document.createElement('div');
       div.classList.add('infowindow');
 
+      let infowindow_title_a = document.createElement('a');
       let infowindow_title = document.createElement('h4');
       infowindow_title.textContent = location.navn;
-      div.appendChild(infowindow_title);
+      infowindow_title_a.appendChild(infowindow_title);
+      div.appendChild(infowindow_title_a);
+
+      if(location.address) {
+        let adr = document.createElement('p');
+        adr.textContent = location.address;
+        div.appendChild(adr);
+      }
+
+      if(location.website) infowindow_title_a.href = location.website;
+
+      let eventList = document.createElement('ul');
+      div.appendChild(eventList);
 
       events
         .filter(e => e.location.toLowerCase() == loc)
         .map(e => e.createInfowindowElement())
-        .forEach(infoWindow => div.appendChild(infoWindow));
+        .forEach(infoWindow => eventList.appendChild(infoWindow));
 
       location.infowindow = new google.maps.InfoWindow({
         content:div,
@@ -569,8 +618,8 @@ window.onload = function() {
     // Heres the button thing that sort events by date or hype!
     let sortBtn = document.createElement('button');
     let sortByHype = true;
-    sortBtn.textContent = 'Sorter etter hype';
-    sortBtn.classList.add('sort-by-hype');
+    sortBtn.textContent = 'Sorter etter våre favoritter';
+    sortBtn.classList.add('sort-by-fav');
 
     sortBtn.addEventListener('click', () => {
       while(list.firstChild) {
@@ -580,18 +629,19 @@ window.onload = function() {
       let toDraw:any[];
       if(sortByHype) {
         toDraw = events.sort((a, b) => Math.sign(b.hype - a.hype));
+        // TODO: sort by hype THEN date
 
         sortBtn.textContent = 'Sorter etter dato';
         sortBtn.classList.add('sort-by-date');
-        sortBtn.classList.remove('sort-by-hype');
+        sortBtn.classList.remove('sort-by-fav');
 
       } else {
 
         toDraw = (<ListElement[]> events).concat(seperators)
           .sort((a, b) => Math.sign(a.start.valueOf() - b.start.valueOf()));
 
-        sortBtn.textContent = 'Sorter etter hype';
-        sortBtn.classList.add('sort-by-hype');
+        sortBtn.textContent = 'Sorter etter våre favoritter';
+        sortBtn.classList.add('sort-by-fav');
         sortBtn.classList.remove('sort-by-date');
       }
 
@@ -604,22 +654,40 @@ window.onload = function() {
     let hypeLegend = document.createElement('div');
     hypeLegend.classList.add('hype-legend', 'noselect');
 
-    let liteHype = document.createElement('p');
-    liteHype.textContent = 'lite hype —'
-    hypeLegend.appendChild(liteHype);
+    let arrangementer = document.createElement('p');
+    arrangementer.textContent = 'Arrangementer —'
+    hypeLegend.appendChild(arrangementer);
 
-    for (let i = 1; i < 6; i++) {
-      let e = document.createElement('div');
-      e.classList.add('event_sidebar-point');
-      let scale = (i * 0.2) + 0.4;
-      e.style.transform = 'scale3d('+scale+','+scale+',1)';
-      e.style.margin = '0 0.' + i + 'em';
-      hypeLegend.appendChild(e);
-    }
+    let a1_e = document.createElement('div');
+    a1_e.classList.add('event_sidebar-point');
+    a1_e.style.margin = '0 0.2em';
 
-    let myeHype = document.createElement('p');
-    myeHype.textContent = '— mye hype'
-    hypeLegend.appendChild(myeHype);
+    let a2_e = <HTMLElement> a1_e.cloneNode(true);
+    let fav_e = <HTMLElement> a1_e.cloneNode(true);
+
+    // a1_e.style.transform = 'scale3d(1,1,1)';
+    a2_e.style.transform = 'scale3d(1.4,1.4,1)';
+
+    hypeLegend.appendChild(a1_e);
+    hypeLegend.appendChild(a2_e);
+
+    let faves = document.createElement('p');
+    faves.textContent = 'Vi ser spesielt frem til disse —'
+    hypeLegend.appendChild(faves);
+    fav_e.classList.add('event_fave-point');
+    fav_e.style.margin = '0 0 0 0.8em';
+    fav_e.style.transform = 'scale3d(1.8,1.8,1)';
+
+    hypeLegend.appendChild(fav_e);
+
+    // for (let i = 1; i < 6; i++) {
+    //   let e = document.createElement('div');
+    //   e.classList.add('event_sidebar-point');
+    //   let scale = (i * 0.2) + 0.4;
+    //   e.style.transform = 'scale3d('+scale+','+scale+',1)';
+    //   e.style.margin = '0 0.' + i + 'em';
+    //   hypeLegend.appendChild(e);
+    // }
 
     copyHead.appendChild(hypeLegend);
 
@@ -638,6 +706,7 @@ window.onload = function() {
     let hideFilterBtn = <HTMLElement> document.getElementById('hide-filter');
     hideFilterBtn.addEventListener('click', function () {
       hiddenFilter = !hiddenFilter;
+
       if(hiddenFilter) {
         filterElem.classList.add('filter-hidden', 'filter-hide-children');
         hideFilterBtn.firstElementChild!.textContent = 'Filter';
@@ -646,6 +715,8 @@ window.onload = function() {
         setTimeout(() => hiddenFilter ? null: filterElem.classList.remove('filter-hide-children'), 200)
         hideFilterBtn.firstElementChild!.textContent = 'Skjul';
       }
+
+      setTimeout(() => hideFilterBtn.blur(), 200)
     })
 
     title.textContent = "Kommende arrangementer";
@@ -660,7 +731,7 @@ window.onload = function() {
   initMap();
 }
 
-function getURL(url: string, options?:any): Promise<any> {
+function getURL(url: string, options?: any): Promise<any> {
   return new Promise(function(resolve, reject) {
     let xhr = new XMLHttpRequest();
     xhr.open('GET', url);
@@ -705,12 +776,15 @@ function toPlaceList(input: string[][]): PlaceList {
   input.filter(i => !!i[0].trim())
     .map(i => {
       return {
-        key:i[0],
-        place:{
-          navn: i[1],
-          lat: +i[2],
-          lng: +i[3]}
-        };
+        key: i[0].toLowerCase(),
+        place: {
+          navn: i[0],
+          lat: +i[1],
+          lng: +i[2],
+          address: i[3],
+          website: i[4]
+        }
+      };
     })
     .forEach(i => placeList[i.key] = i.place)
 

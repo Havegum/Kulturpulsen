@@ -1,0 +1,24 @@
+<svg version="1.1"
+	 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:a="http://ns.adobe.com/AdobeSVGViewerExtensions/3.0/"
+	 x="0px" y="0px" width="64px" height="64px" viewBox="0 0 64 64" style="enable-background:new 0 0 64 64;" xml:space="preserve">
+<style type="text/css">
+	.st0{}
+</style>
+<g style="fill:#ffffff">
+	<path id="XMLID_35_" class="st0" d="M62,12h-8v-2c0-1.1-0.9-2-2-2h-6c-1.1,0-2,0.9-2,2v2H20v-2c0-1.1-0.9-2-2-2h-6
+		c-1.1,0-2,0.9-2,2v2H2c-1.1,0-2,0.9-2,2v48c0,1.1,0.9,2,2,2h60c1.1,0,2-0.9,2-2V14C64,12.9,63.1,12,62,12z M48,12h2v4h-2V12z
+		 M14,12h2v4h-2V12z M60,60H4V16h6v2c0,1.1,0.9,2,2,2h6c1.1,0,2-0.9,2-2v-2h24v2c0,1.1,0.9,2,2,2h6c1.1,0,2-0.9,2-2v-2h6V60z"/>
+	<path id="XMLID_32_" class="st0" d="M20,28h-8c-1.1,0-2,0.9-2,2v8c0,1.1,0.9,2,2,2h8c1.1,0,2-0.9,2-2v-8C22,28.9,21.1,28,20,28z
+		 M18,36h-4v-4h4V36z"/>
+	<path id="XMLID_29_" class="st0" d="M36,28h-8c-1.1,0-2,0.9-2,2v8c0,1.1,0.9,2,2,2h8c1.1,0,2-0.9,2-2v-8C38,28.9,37.1,28,36,28z
+		 M34,36h-4v-4h4V36z"/>
+	<path id="XMLID_26_" class="st0" d="M52,28h-8c-1.1,0-2,0.9-2,2v8c0,1.1,0.9,2,2,2h8c1.1,0,2-0.9,2-2v-8C54,28.9,53.1,28,52,28z
+		 M50,36h-4v-4h4V36z"/>
+	<path id="XMLID_23_" class="st0" d="M20,44h-8c-1.1,0-2,0.9-2,2v8c0,1.1,0.9,2,2,2h8c1.1,0,2-0.9,2-2v-8C22,44.9,21.1,44,20,44z
+		 M18,52h-4v-4h4V52z"/>
+	<path id="XMLID_20_" class="st0" d="M36,44h-8c-1.1,0-2,0.9-2,2v8c0,1.1,0.9,2,2,2h8c1.1,0,2-0.9,2-2v-8C38,44.9,37.1,44,36,44z
+		 M34,52h-4v-4h4V52z"/>
+	<path id="XMLID_17_" class="st0" d="M52,44h-8c-1.1,0-2,0.9-2,2v8c0,1.1,0.9,2,2,2h8c1.1,0,2-0.9,2-2v-8C54,44.9,53.1,44,52,44z
+		 M50,52h-4v-4h4V52z"/>
+</g>
+</svg>
