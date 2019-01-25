@@ -200,6 +200,7 @@ class CultureEvent {
   private website: string;
   private locale: string;
   private start_time: string;
+  private end?: Date;
   private end_time: string;
   private infowindowElement?: HTMLElement;
 
@@ -270,6 +271,15 @@ class CultureEvent {
     }
 
     this.start_time = start_time;
+
+    if(end_date && end_date.valueOf() > start_date.valueOf() ) {
+      let d:number[] = start_date.trim().split('.').map(n => +n);
+      this.end = new Date(d[2], d[1]-1, d[0]);
+      if(end_time) {
+        this.end.setHours(+end_time.split(':')[0]);
+        this.end.setMinutes(+end_time.split(':')[1]);
+      }
+    }
     this.end_time = end_time;
 
     this.color = meta.kategorier[this.category.trim()] || '';
