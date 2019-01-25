@@ -3,10 +3,6 @@ const DAYS:Array<string> = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 
 const TODAY:Date = new Date();
 const DATEBOUNDARY: Date = getDateBoundary(TODAY);
 
-// let FIRE_ICONS:Promise<any>[] = [1,2,3,4,5,6].map(n =>
-  // getURL('./img/fire_'+n+'.svg', {responseType:'XML', overrideMimeType:'image/svg+xml'}).then(response => response.documentElement));
-
-// TODO: Sorter by ukedag
 let filtered:Array<string> = [];
 let map:google.maps.Map;
 let global_infowindow:google.maps.InfoWindow | undefined;
@@ -245,7 +241,7 @@ class CultureEvent {
     // if string is a day of the week
     } else if(DAYS.indexOf(start_date) > -1) {
       let day:number = DAYS.indexOf(start_date);
-      let currentDay:number = (TODAY.getDay() + 5) % 6; // +5%6 makes monday first day
+      let currentDay:number = (TODAY.getDay() + 6) % 7; // +6%7 makes monday first day
 
       let dayHasPassed:boolean = day < currentDay;
 
@@ -338,23 +334,6 @@ class CultureEvent {
     let sidebar = document.createElement('div');
     sidebar.classList.add('event_sidebar');
 
-
-    // // INLINE SVG EMBEDDING
-    // let sb_point = document.createElement('div');
-    // sb_point.style.fill = this.color;
-    // let iconNum:number = Math.max(Math.min(this.hype - 1, 5), 0);
-    //
-    // if(iconNum === 5) {
-    //   sb_point.style.position = 'relative';
-    //   sb_point.style.bottom = '.85em';
-    //   sb_point.style.transform = 'scale3d(.85, .85, 1)';
-    // }
-    //
-    // (async function () {
-    //   let svg = await FIRE_ICONS[iconNum];
-    //   sb_point.appendChild(svg.cloneNode(true));
-    // })();
-
     let sb_point = document.createElement('div');
     sb_point.classList.add('event_sidebar-point');
     let scale = 0.9;
@@ -368,13 +347,6 @@ class CultureEvent {
 
     sb_point.style.transform = 'scale3d('+scale+','+scale+',1)';
     sb_point.style.backgroundColor = this.color;
-
-    // // OBJECT SVG
-    // let sb_point = document.createElement('object');
-    // sb_point.data = './img/fire_'+this.hype+'.svg';
-    // sb_point.type = 'image/svg+xml';
-    // sb_point.style.width = '1.5em'
-    // sb_point.style.height = '1.5em'
 
     let sb_repeat = document.createElement('div');
     sb_repeat.classList.add('event_sidebar-repeating-points')
@@ -407,7 +379,7 @@ class CultureEvent {
     let time = document.createElement('span');
     time.classList.add('event_details-time');
     time.textContent =
-        DAYS[(this.start.getDay()+5)%6] + ' ' +
+        DAYS[(this.start.getDay()+6)%7] + ' ' +
         this.start.getDate() + '. ' +
         this.start.toLocaleString('nb-NO', {month:'long'}) + ' ' +
         this.start_time + (!this.end_time ? '' : '–' +
@@ -675,7 +647,6 @@ window.onload = function() {
     let a2_e = <HTMLElement> a1_e.cloneNode(true);
     let fav_e = <HTMLElement> a1_e.cloneNode(true);
 
-    // a1_e.style.transform = 'scale3d(1,1,1)';
     a2_e.style.transform = 'scale3d(1.4,1.4,1)';
 
     hypeLegend.appendChild(a1_e);
@@ -689,16 +660,6 @@ window.onload = function() {
     fav_e.style.transform = 'scale3d(1.8,1.8,1)';
 
     hypeLegend.appendChild(fav_e);
-
-    // for (let i = 1; i < 6; i++) {
-    //   let e = document.createElement('div');
-    //   e.classList.add('event_sidebar-point');
-    //   let scale = (i * 0.2) + 0.4;
-    //   e.style.transform = 'scale3d('+scale+','+scale+',1)';
-    //   e.style.margin = '0 0.' + i + 'em';
-    //   hypeLegend.appendChild(e);
-    // }
-
     copyHead.appendChild(hypeLegend);
 
     // initialize filter module
@@ -726,7 +687,7 @@ window.onload = function() {
         hideFilterBtn.firstElementChild!.textContent = 'Skjul';
       }
 
-      setTimeout(() => hideFilterBtn.blur(), 200)
+      setTimeout(() => { hideFilterBtn.blur(); document.body.focus() }, 200)
     })
 
     title.textContent = "Kommende arrangementer";
