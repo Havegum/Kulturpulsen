@@ -688,7 +688,11 @@ window.onload = function() {
       }
 
       setTimeout(() => { hideFilterBtn.blur(); document.body.focus() }, 200)
-    })
+    });
+
+    if (window.matchMedia('(max-width: 735px)').matches) {
+      hideFilterBtn.click();
+    }
 
     title.textContent = "Kommende arrangementer";
     title.classList.remove('loading');

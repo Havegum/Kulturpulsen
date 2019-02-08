@@ -150,8 +150,11 @@ figure {
   min-height: 20em;
 }
 
-figcaption {
-  display: none;
+@media screen {
+  figcaption {
+    position: absolute;
+    left: -1000px
+  }
 }
 
 .copy {
@@ -678,7 +681,17 @@ button:hover {
   bottom: -1em;
 }
 
+
 .hide-filter:hover {
+  background-color: lightgrey;
+  background-color: var(--lightgrey);
+  color: #777;
+  color: var(--grey);
+}
+
+.hide-filter:active {
+  background-color: #169754;
+  background-color: var(--main);
   color: white;
   bottom:-3em;
 }
@@ -702,6 +715,15 @@ button:hover {
     -webkit-justify-content: space-around;
        -moz-justify-content: space-around;
             justify-content: space-around;
+  }
+
+  .hide-filter:hover {
+    color: white;
+    bottom:-3em;
+
+    background-color: #169754;
+    background-color: var(--main);
+    color: white;
   }
 
   header > div {
