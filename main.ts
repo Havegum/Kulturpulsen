@@ -77,12 +77,12 @@ class FilterModule {
     parent.classList.remove('display-none');
   }
 
-  checkAllEmpty(/*toggler: FilterToggle*/) {
+  checkAllEmpty() {
     let container = this.evts_container;
     let evts_header = this.evts_header;
 
     if (!this.events.reduce((a:boolean, b) =>  a || b.isVisible, false)) {
-      // 2: if not all filters are off, but no results: display cute sheep looking for things
+      // 2: if not all filters are off, but no results: display cute sheep looking for things or something
       container.classList.add('no-events-found');
       evts_header.classList.add('no-events-found');
     } else {
@@ -91,7 +91,7 @@ class FilterModule {
     }
 
     if(!this.togglerList.reduce((a:boolean, b) => a || b.checked, false)) {
-      // 1: if all filters are off, display cute bear struggling with controls
+      // 1: if all filters are off, display cute bear struggling with controls or something
       container.classList.add('no-filters-enabled');
       evts_header.classList.add('no-filters-enabled');
     } else {
@@ -185,6 +185,7 @@ class CultureEvent {
   public location: string;
   public hype: number;
   public start: Date;
+  public end?: Date;
   public repeating_desc?: string;
   public repeating: boolean;
   public description: string;
@@ -196,7 +197,6 @@ class CultureEvent {
   private website: string;
   private locale: string;
   private start_time: string;
-  private end?: Date;
   private end_time: string;
   private infowindowElement?: HTMLElement;
 
@@ -268,12 +268,16 @@ class CultureEvent {
 
     this.start_time = start_time;
 
-    if(end_date && end_date.valueOf() > start_date.valueOf() ) {
-      let d:number[] = start_date.trim().split('.').map(n => +n);
-      this.end = new Date(d[2], d[1]-1, d[0]);
-      if(end_time) {
-        this.end.setHours(+end_time.split(':')[0]);
-        this.end.setMinutes(+end_time.split(':')[1]);
+    if(end_date.match(/\d\d\.\d\d\.\d{4}/)) {
+      let d:number[] = end_date.trim().split('.').map(n => +n);
+      let end = new Date(d[2], d[1]-1, d[0]);
+
+      if(end.valueOf() > this.start.valueOf()) {
+        this.end = end;
+        if(end_time) {
+          this.end.setHours(+end_time.split(':')[0]);
+          this.end.setMinutes(+end_time.split(':')[1]);
+        }
       }
     }
     this.end_time = end_time;
@@ -314,10 +318,16 @@ class CultureEvent {
     if(this.isDrawn) return this.container;
 
     // If meta has latlng information, draw the marker there.
-    if(!!this.place) {
+    if(!!this.place ) {
       this.drawGoogleMarker();
     } else {
-      console.error(`Finner ikke stedet "${this.location}" for arrangement "${this.title}" – er stedet stavet riktig? Er stedet registrert riktig?`);
+      if(this.location == '') {
+        console.error(`Arrangementet "${this.title}" mangler sted`)
+
+      } else if(!/(\s.+){3,}/.test(this.location)) {
+        // location har mindre enn tre mellomrom
+        console.error(`Finner ikke stedet "${this.location}" for arrangement "${this.title}" – er stedet stavet riktig? Er stedet registrert riktig?`);
+      }
     }
 
     let li = this.container;
@@ -360,6 +370,8 @@ class CultureEvent {
 
     let title_link = document.createElement('a');
     title_link.classList.add('event-title');
+    if(this.start.valueOf() < TODAY.valueOf()) title_link.classList.add('ongoing-event')
+
     let title = document.createElement('h2');
     title.textContent = this.title;
     title_link.setAttribute('style', 'text-decoration-color:' + this.color);
@@ -378,12 +390,21 @@ class CultureEvent {
 
     let time = document.createElement('span');
     time.classList.add('event_details-time');
-    time.textContent =
-        DAYS[(this.start.getDay()+6)%7] + ' ' +
+
+    time.textContent = DAYS[(this.start.getDay()+6)%7] + ' ' +
         this.start.getDate() + '. ' +
-        this.start.toLocaleString('nb-NO', {month:'long'}) + ' ' +
-        this.start_time + (!this.end_time ? '' : '–' +
-        this.end_time);
+        this.start.toLocaleString('nb-NO', {month:'long'});
+    if(this.start_time) time.textContent += ' ' + this.start_time;
+
+    if(this.end) {
+      time.textContent += ' — ' + DAYS[(this.end.getDay()+6)%7] + ' ' +
+          this.end.getDate() + '. ' +
+          this.end.toLocaleString('nb-NO', {month:'long'});
+      if(this.end_time) time.textContent += ' ' + this.end_time;
+
+    } else if(this.end_time) {
+      time.textContent += '–' + this.end_time;
+    }
 
     let marker = this.marker;
     let location = document.createElement('a');
@@ -537,7 +558,7 @@ window.onload = function() {
       kategorier:categories
     }
 
-      /* LETS GET EVENTS UP AND RUNNING
+      /* OKAY LETS GET EVENTS UP AND RUNNING
         The following block does this:
           for each row:
             filter rows with empty title
@@ -547,9 +568,12 @@ window.onload = function() {
             draw
       */
     let events = events_csv
-          .filter(rows => !!rows[0].trim())
-          .map(rows => new CultureEvent(meta, ...rows))
-          .filter(evt => evt.repeating || evt.start && evt.start.valueOf() > TODAY.valueOf());
+          .filter(rows => !!rows[0].trim()) // Skip empty rows
+          .map(rows => new CultureEvent(meta, ...rows)) // Map to CultureEvent
+          .filter(evt => evt.repeating
+            || evt.start && evt.start.valueOf() > TODAY.valueOf()
+            || evt.end && evt.end.valueOf() > TODAY.valueOf()
+          ); // Filter away past events
 
     let seperators = getMonthSeparators(TODAY, DATEBOUNDARY).concat(getWeeks(TODAY, DATEBOUNDARY));
 
@@ -791,9 +815,13 @@ function getDateBoundary(today:Date):Date {
 
 function getWeeks(current?:Date, goal?:Date):ListSeperator[] {
   goal = goal || DATEBOUNDARY;
+  goal = new Date(goal.valueOf())
+
   current = current || TODAY;
+  current = new Date(current.valueOf())
+
   let dates: ListSeperator[] = [];
-  let weekNum = getWeekNumber(TODAY);
+  let weekNum = getWeekNumber(current);
 
   current.setDate(current.getDate() - current.getDay() + 1);
 

@@ -63,7 +63,7 @@ footer .maillink {
 /* FLEX */
 body,
 header,
-header > div,
+#header,
 .copy,
 .event,
 .event_sidebar,
@@ -111,7 +111,7 @@ header {
   justify-content: center;
 }
 
-header > div {
+#header {
   height: 2.8em;
   -webkit-flex-direction: row;
   -ms-flex-direction: row;
@@ -121,17 +121,9 @@ header > div {
   align-items: center;
 }
 
-header a {
-  font-size: 2.6em;
-  font-family: 'Roboto', sans-serif;
-  font-weight: 700;
-  margin: 0 auto;
-  color: inherit;
-  text-decoration: none;
-}
-
-header a {
+header a, header img, .kulturpulsen {
   display: inline-block;
+  height: 100%;
 }
 
 .kulturpulsen {
@@ -371,6 +363,14 @@ button:hover {
   text-decoration-color: currentcolor !important;
 }
 
+.ongoing-event h2::after {
+  content: 'Pågående';
+  display: inline-block;
+  font-size: .7em;
+  color: #169754;
+  color: var(--main);
+  margin-left: 1em;
+}
 
 .event p {
   max-width: 30em;
@@ -620,6 +620,7 @@ button:hover {
 
 .filter.filter-hidden {
   font-size: 0;
+  overflow: hidden;
 }
 .filter * {
   transition: opacity 200ms;
@@ -726,9 +727,9 @@ button:hover {
     color: white;
   }
 
-  header > div {
+  #header {
     width: 50em;
-    padding: 0 1em;
+    padding: .4em 0;
     height: 4.6em;
   }
 
@@ -736,15 +737,14 @@ button:hover {
     font-size: 3.4em;
   }
 
-  header > div > a {
+  #header > a {
     margin: 0 .5em 0 0;
   }
 
   .kulturpulsen {
     display: inline-block;
-    vertical-align: bottom;
-    font-size: 0;
   }
+
   .copy-container {
     margin-bottom: 3em;
     -webkit-flex: 1 0 100%;
