@@ -4,11 +4,13 @@
   "description": "Studvests arrangementoversikt - kulturpulsen",
   "main": "main.js",
   "dependencies": {
-    "@types/googlemaps": "^3.30.16"
+    "@types/googlemaps": "^3.30.16",
+    "sirv-cli": "^1.0.6"
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc && sirv"
   },
   "repository": {
     "type": "git",

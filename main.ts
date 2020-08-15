@@ -207,18 +207,21 @@ class CultureEvent {
 
   constructor(
     meta:Meta,
-    title = '',
-    location = '',
-    locale = '',
-    start_date = '',
-    start_time = '',
-    end_date = '',
-    end_time = '',
-    category = '',
-    hype = '',
-    description = '',
-    website = '',
-    repeating = ''
+    {
+      title = '',
+      location = '',
+      locale = '',
+      start_date = '',
+      start_time = '',
+      end_date = '',
+      end_time = '',
+      category = '',
+      hype = '',
+      description = '',
+      website = '',
+      repeating = ''
+    }={}
+
   ) {
     this.title = title;
     this.website = website;
@@ -525,6 +528,74 @@ class ListSeperator {
   }
 }
 
+
+// 1BSW9jhHCMK74ae_k1dHG5Ftik3ToIcH_zt2gtoEM5kc
+
+function gsheetsAPI (sheetId: string, sheetNumber = 1): Promise<object> {
+  try {
+    const sheetsUrl = `https://spreadsheets.google.com/feeds/cells/${sheetId}/${sheetNumber}/public/values?alt=json-in-script`;
+
+    return fetch(sheetsUrl)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Error fetching sheet');
+        }
+
+        return response.text();
+      })
+      .then(resultText => {
+        const formattedText = resultText.replace('gdata.io.handleScriptLoaded(', '').slice(0, -2);
+        return JSON.parse(formattedText);
+      });
+
+  } catch (err) {
+    console.log(`gsheetsAPI error: ${err}`);
+
+    return Promise.reject(`gsheetsAPI error: ${err}`);
+  }
+}
+
+
+function processGSheetResults (JSONResponse: any): any[] {
+  const data = JSONResponse.feed.entry;
+  const startRow = 2; // skip the header row(1), don't need it
+  let processedResults = [{}];
+  let colNames: object = {};
+
+  for (let item of data) {
+    const cell = item['gs$cell']; // gets cell data
+    const val = cell['$t']; // gets cell value
+    const columnNum: string = cell['col']; // gets the col number
+    const thisRow = cell['row']; // gets the row number
+    // @ts-ignore
+    const colNameToAdd: any = colNames[columnNum]; // careful, this will be undefined if we hit it on the first pass
+    // don't add this row to the return data, but add it to list of column names
+    if (thisRow < startRow) {
+      // @ts-ignore
+      colNames[columnNum] = val.toLowerCase();
+      continue; // skip the header row
+    }
+    if (typeof processedResults[thisRow] === 'undefined') {
+      processedResults[thisRow] = {};
+    }
+    if (typeof colNameToAdd !== 'undefined' && colNameToAdd.length > 0) {
+      // @ts-ignore
+      processedResults[thisRow][colNameToAdd] = val;
+    }
+  }
+
+  // make sure we're only returning valid, filled data items
+  processedResults = processedResults.filter(result => Object.keys(result).length);
+  // if we're not filtering, then return all results
+  return processedResults;
+}
+
+
+
+const sheetId = '1BSW9jhHCMK74ae_k1dHG5Ftik3ToIcH_zt2gtoEM5kc'
+const getAndParse = (n: number) => gsheetsAPI(sheetId, n).then(processGSheetResults);
+
+
 window.onload = function() {
   let listOrNull = document.getElementById('list');
   if(listOrNull === null) throw new Error('HTML error! #list not found');
@@ -542,20 +613,20 @@ window.onload = function() {
 
   let parse = parseCSV('\t');
 
-  let eventsURL =   'https://docs.google.com/spreadsheets/d/e/2PACX-1vT3xJC11F5tBLqNYTETN8hAdqBy0OV3vTMt6VjdLLVcvGi_yo0N2fSp8FY9SRFhaI-Pr-FzYnc86Ycj/pub?gid=0&single=true&output=tsv';
-  let categoriesURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT3xJC11F5tBLqNYTETN8hAdqBy0OV3vTMt6VjdLLVcvGi_yo0N2fSp8FY9SRFhaI-Pr-FzYnc86Ycj/pub?gid=1573476937&single=true&output=tsv';
-  let placesURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT3xJC11F5tBLqNYTETN8hAdqBy0OV3vTMt6VjdLLVcvGi_yo0N2fSp8FY9SRFhaI-Pr-FzYnc86Ycj/pub?gid=606272667&single=true&output=tsv';
+  // let eventsURL =   'https://docs.google.com/spreadsheets/d/e/2PACX-1vT3xJC11F5tBLqNYTETN8hAdqBy0OV3vTMt6VjdLLVcvGi_yo0N2fSp8FY9SRFhaI-Pr-FzYnc86Ycj/pub?gid=0&single=true&output=tsv';
+  // let categoriesURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT3xJC11F5tBLqNYTETN8hAdqBy0OV3vTMt6VjdLLVcvGi_yo0N2fSp8FY9SRFhaI-Pr-FzYnc86Ycj/pub?gid=1573476937&single=true&output=tsv';
+  // let placesURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT3xJC11F5tBLqNYTETN8hAdqBy0OV3vTMt6VjdLLVcvGi_yo0N2fSp8FY9SRFhaI-Pr-FzYnc86Ycj/pub?gid=606272667&single=true&output=tsv';
 
-  let events = getURL(eventsURL).then(parse);
-  let places = getURL(placesURL).then(parse).then(toPlaceList)
-  let categories = getURL(categoriesURL).then(parse).then(toCategoryList)
+  let events     = getAndParse(1);
+  let places     = getAndParse(3).then(toPlaceList)
+  let categories = getAndParse(2).then(toCategoryList)
 
   Promise.all([events, places, categories]).then(promise => {
     let [events_csv, places, categories] = [promise[0], promise[1], promise[2]];
 
     let meta:Meta = {
       steder: places,
-      kategorier:categories
+      kategorier: categories
     }
 
       /* OKAY LETS GET EVENTS UP AND RUNNING
@@ -568,8 +639,22 @@ window.onload = function() {
             draw
       */
     let events = events_csv
-          .filter(rows => !!rows[0].trim()) // Skip empty rows
-          .map(rows => new CultureEvent(meta, ...rows)) // Map to CultureEvent
+          .filter(rows => !!rows['tittel']) // Skip empty rows
+          .map(d => ({
+            title: d['tittel'] || '',
+            location: d['sted'] || '',
+            locale: d['lokale'] || '',
+            start_date: d['startdato eller ukedag'] || '',
+            start_time: d['starttid'] || '',
+            end_date: d['sluttdato'] || '',
+            end_time: d['sluttid'] || '',
+            category: d['kategori'] || '',
+            hype: d['hype'] || '',
+            description: d['beskrivelse'] || '',
+            website: d['nettside'] || '',
+            repeating: d['fast'] || ''
+          }))
+          .map(rows => new CultureEvent(meta, rows)) // Map to CultureEvent
           .filter(evt => evt.repeating
             || evt.start && evt.start.valueOf() > TODAY.valueOf()
             || evt.end && evt.end.valueOf() > TODAY.valueOf()
@@ -762,26 +847,27 @@ function parseCSV(delimeter: string) {
   }
 }
 
-function toCategoryList(input: string[][]): CategoryList {
+function toCategoryList(input: any[]): CategoryList {
+
   let categoryList:CategoryList = {};
-  input.filter(i => !!i[0].trim())
-    .forEach(i => categoryList[i[0].replace('"', '')] = i[1])
+  input.filter(i => !!i['kategori'].trim())
+    .forEach(i => categoryList[i['kategori'].replace('"', '')] = i['fargekode'])
   return categoryList
 }
 
-function toPlaceList(input: string[][]): PlaceList {
+function toPlaceList(input: any[]): PlaceList {
   let placeList: PlaceList = {};
 
-  input.filter(i => !!i[0].trim())
+  input.filter(i => !!i['fullstendig navn'].trim())
     .map(i => {
       return {
-        key: i[0].toLowerCase(),
+        key: i['fullstendig navn'].toLowerCase(),
         place: {
-          navn: i[0],
-          lat: +i[1],
-          lng: +i[2],
-          address: i[3],
-          website: i[4]
+          navn: i['fullstendig navn'],
+          lat: +i['latitude'],
+          lng: +i['longitude'],
+          address: i['adresse'],
+          website: i['nettside']
         }
       };
     })
@@ -807,7 +893,7 @@ function getDateBoundary(today:Date):Date {
   if(today.getMonth() <= 6) {
     boundary.setMonth(7);
   } else {
-    boundary.setMonth(1);
+    boundary.setMonth(0);
     boundary.setFullYear(boundary.getFullYear() + 1);
   }
   return boundary;
@@ -842,9 +928,18 @@ function getMonthSeparators(today:Date, boundry:Date):ListSeperator[] {
   let monthSeparators:any[] = [];
 
   while(lastMonthWithinBound.valueOf() < boundry.valueOf()) {
-    lastMonthWithinBound = new Date((month == 12 ? year + 1 : year) + '-' + leadingZero(month++%12) + '-01');
+    console.log(boundry)
+    if (month >= 12) year++;
+    let ISOstring = `${year}-${leadingZero((month%12) + 1)}-01`;
+    console.log(ISOstring)
+
+    lastMonthWithinBound = new Date(ISOstring);
     monthSeparators.push(lastMonthWithinBound);
+
+    month++;
   }
+
+
 
   return monthSeparators.map(date => new ListSeperator(date));
 }
@@ -1045,7 +1140,7 @@ function initMap() {
     { name: 'Styled Map' });
 
   map = new google.maps.Map(
-    document.getElementById('map'), {
+    (<HTMLElement> document.getElementById('map')), {
       zoom: 14,
       center: bergen,
       mapTypeControl: false,

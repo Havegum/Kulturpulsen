@@ -664,8 +664,8 @@ button:hover {
 
 .hide-filter {
   z-index: -200;
-  color: darkgrey;
-  color: var(--darkgrey);
+  color: #333;
+  /* color: var(--darkgrey); */
   width: 4em;
   height:4em;
   border-radius: 0 0 100% 100%;
